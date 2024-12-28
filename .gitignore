@@ -1,1 +1,9 @@
 *.pdf
+*.vo
+*.d
+*.vok
+*.vos
+*.glob
+*.aux
+CoqMakefile*
+documentation
