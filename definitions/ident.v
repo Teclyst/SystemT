@@ -1,9 +1,7 @@
 Require Import FSets.FMaps.
 Require Structures.OrderedType.
+Require Import PeanoNat.
 Require Import Nat.
-Require Import Arith.PeanoNat.
-Require Import Arith.Bool_nat.
-Require Import String.
 
 Require Import ssreflect ssrfun ssrbool.
 

@@ -116,9 +116,9 @@ Proof.
   [ |
     destruct (dec_le n m) |
     destruct (IHe (S m)) |
-    destruct (IHe1 m); destruct (IHe2 m) | |
-    destruct (IHe m) | | |
-    destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) |
+    destruct (IHe1 m); destruct (IHe2 m) | | |
+    destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) | | 
+    destruct (IHe m) |
     destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m)
   ];
     try (left; auto using bound_nclosed; fail);
