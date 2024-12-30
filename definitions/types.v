@@ -5,6 +5,8 @@ Require Import ident.
 
 Declare Module TIdent : IDENT.
 
+Module TMap := TIdent.Map.
+
 Module TIdentFacts := IdentFacts TIdent.
 
 Infix "=?t" := TIdentFacts.eqb (at level 70).
@@ -19,7 +21,7 @@ Inductive typeT :=
 
 Notation "t ->T u" := (funT t u) (at level 80, right associativity).
 
-Fixpoint tvarT_subst (x : tident) (t a : typeT) :=
+Fixpoint typeT_tsubst (x : tident) (a t : typeT) :=
   match t with
   | tvarT y =>
     match x =?t y with
@@ -27,7 +29,20 @@ Fixpoint tvarT_subst (x : tident) (t a : typeT) :=
     | _ => tvarT y
     end
   | funT t u =>
-    funT (tvarT_subst x t a) (tvarT_subst x u a)
+    funT (typeT_tsubst x a t) (typeT_tsubst x a u)
+  | t =>
+    t
+  end.
+
+Fixpoint typeT_par_tsubst (s : TMap.t typeT) (t : typeT) :=
+  match t with
+  | tvarT x =>
+    match TMap.find x s with
+    | Some a => a
+    | _ => tvarT x
+    end
+  | funT t u =>
+    funT (typeT_par_tsubst s t) (typeT_par_tsubst s u)
   | t =>
     t
   end.

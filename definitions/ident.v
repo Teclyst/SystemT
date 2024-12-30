@@ -48,7 +48,8 @@ Module IdentFacts (Import Ident : IDENT).
 
 End IdentFacts.
 
-Module NatMap := FMapList.Make (Structures.OrderedTypeEx.Nat_as_OT).
+Module NatMap :=
+  FMapList.Make (Structures.OrderedTypeEx.Nat_as_OT).
 
 Module NatIdent <: IDENT.
 
@@ -79,16 +80,16 @@ Module NatIdent <: IDENT.
       simpl in Heq.
       simpl.
       rewrite Heq.
-      eapply PeanoNat.Nat.le_trans.
-    --- exact (PeanoNat.Nat.le_max_l y.1 n).
+      eapply Nat.le_trans.
+    --- exact (Nat.le_max_l y.1 n).
     --- generalize (Nat.max y.1 n).
         clear n.
         induction l;
         simpl;
         intro n.
-    ----- apply PeanoNat.Nat.le_refl.
-    ----- eapply PeanoNat.Nat.le_trans.
-    ------- exact (PeanoNat.Nat.le_max_r a.1 n).
+    ----- apply Nat.le_refl.
+    ----- eapply Nat.le_trans.
+    ------- exact (Nat.le_max_r a.1 n).
     ------- exact (IHl (Nat.max a.1 n)).
     - simpl.
       exact (IHHmap (Nat.max y.1 n)).
@@ -107,10 +108,3 @@ Module NatIdent <: IDENT.
   Qed.
 
 End NatIdent.
-
-
-
-
-
-
-
