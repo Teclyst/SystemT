@@ -7,22 +7,29 @@
 Require Import Nat.
 Require Import Logic.Decidable.
 Require Import Coq.Arith.Compare_dec.
+Require Import ident.
 
 Declare Scope system_t_term_scope.
 
 (** ** Terms
 *)
 
+Declare Module FIdent : IDENT.
+
+Module FIdentFacts := IdentFacts FIdent.
+
+Infix "=?f" := FIdentFacts.eqb (at level 70).
+
 (** [idenT] is the label type for free variables.
 *)
-Definition identT := nat.
+Definition fident := FIdent.t.
 
 (** [termT] is the [Type] representing the terms of System-T.
 
     Free variables are distinguished from bound variables, to avoid
     alpha-conversion issues.
 
-    Free variables are labeled with [identT] values.
+    Free variables are labeled with [fident] values.
 
     Bound variables are represented by de Bruijn indexes. Because of
     that, a [termT] may correspond to something that is not a real
@@ -30,15 +37,15 @@ Definition identT := nat.
     nonexistant lambdas.
 *)
 Inductive termT :=
-  | fvarT : identT -> termT
+  | fvarT : fident -> termT
   | bvarT : nat -> termT
   | absT : termT -> termT
   | appT : termT -> termT -> termT
-  | oT : termT
-  | sT : termT -> termT
   | trueT : termT
   | falseT : termT
   | iteT : termT -> termT -> termT -> termT
+  | oT : termT
+  | sT : termT -> termT
   | recT : termT -> termT -> termT -> termT.
 
 (** ** Closedness : Definitions
@@ -54,42 +61,42 @@ Inductive termT :=
 *)
 Inductive bound_nclosed : nat -> termT -> Prop :=
   | fvarT_closed :
-    forall n : nat, forall x : identT,
+    forall n : nat, forall x : fident,
     bound_nclosed n (fvarT x)
   | bvarT_closed :
     forall n x : nat, x <= n ->
     bound_nclosed n (bvarT x)
   | absT_closed :
-    forall n : nat, forall u : termT,
-    bound_nclosed (S n) u ->
-    bound_nclosed n (absT u)
+    forall n : nat, forall e : termT,
+    bound_nclosed (S n) e ->
+    bound_nclosed n (absT e)
   | appT_closed :
-    forall n : nat, forall u v : termT,
-    bound_nclosed n u ->
-    bound_nclosed n v ->
-    bound_nclosed n (appT u v)
-  | oT_closed :
-    forall n : nat, bound_nclosed n oT
-  | sT_closed :
-    forall n : nat, forall u : termT,
-    bound_nclosed n u ->
-    bound_nclosed n (sT u)
+    forall n : nat, forall e f : termT,
+    bound_nclosed n e ->
+    bound_nclosed n f ->
+    bound_nclosed n (appT e f)
   | trueT_closed :
     forall n : nat, bound_nclosed n trueT
   | falseT_closed :
     forall n : nat, bound_nclosed n falseT
   | iteT_closed :
-    forall n : nat, forall u v w : termT,
-    bound_nclosed n u ->
-    bound_nclosed n v ->
-    bound_nclosed n w ->
-    bound_nclosed n (iteT u v w)
+    forall n : nat, forall e f g : termT,
+    bound_nclosed n e ->
+    bound_nclosed n f ->
+    bound_nclosed n g ->
+    bound_nclosed n (iteT e f g)
+  | oT_closed :
+    forall n : nat, bound_nclosed n oT
+  | sT_closed :
+    forall n : nat, forall e : termT,
+    bound_nclosed n e ->
+    bound_nclosed n (sT e)
   | recT_closed :
-    forall n : nat, forall u v w : termT,
-    bound_nclosed n u ->
-    bound_nclosed n v ->
-    bound_nclosed n w ->
-    bound_nclosed n (recT u v w).
+    forall n : nat, forall e f g : termT,
+    bound_nclosed n e ->
+    bound_nclosed n f ->
+    bound_nclosed n g ->
+    bound_nclosed n (recT e f g).
 
 (** ** Closedness : Decidability
 *)
@@ -101,18 +108,18 @@ Definition bound_closed := bound_nclosed O.
 
 (** [bound_nclosed n] is a decidable predicate for all [n].
 *)
-Lemma bound_nclosed_decidable (u : termT) :
-    forall n : nat, decidable (bound_nclosed n u).
+Lemma bound_nclosed_decidable (e : termT) :
+    forall n : nat, decidable (bound_nclosed n e).
 Proof.
-  induction u;
+  induction e;
   intro m;
   [ |
     destruct (dec_le n m) |
-    destruct (IHu (S m)) |
-    destruct (IHu1 m); destruct (IHu2 m) | |
-    destruct (IHu m) | | |
-    destruct (IHu1 m); destruct (IHu2 m); destruct (IHu3 m) |
-    destruct (IHu1 m); destruct (IHu2 m); destruct (IHu3 m)
+    destruct (IHe (S m)) |
+    destruct (IHe1 m); destruct (IHe2 m) | |
+    destruct (IHe m) | | |
+    destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) |
+    destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m)
   ];
     try (left; auto using bound_nclosed; fail);
     right; intro Hn; inversion Hn; auto using bound_nclosed.
@@ -120,66 +127,66 @@ Qed.
 
 (** [bound_closed n] is a decidable predicate.
 *)
-Lemma bound_closed_decidable (u : termT) :
-    decidable (bound_closed u).
+Lemma bound_closed_decidable (e : termT) :
+    decidable (bound_closed e).
 Proof.
-  exact (bound_nclosed_decidable u O).
+  exact (bound_nclosed_decidable e O).
 Qed.
 
 (** ** Substitutions
 *)
 
-(** [subst_bvarT n u a] is [u], where all the occurrences of the
+(** [subst_bvarT n e a] is [e], where all the occurrences of the
     variable bound by the lambda at height [n] above the root are
     replaced by [a].
 *)
-Fixpoint subst_bvarT (n : nat) (u a : termT) :=
-  match u with
+Fixpoint subst_bvarT (n : nat) (e a : termT) :=
+  match e with
   | bvarT m => 
     match n =? m with
     | true => a
     | false => bvarT m
     end
-  | absT u => absT (subst_bvarT (S n) u a)
-  | appT u v =>
-    appT (subst_bvarT n u a) (subst_bvarT n v a)
-  | sT u => sT (subst_bvarT n u a)
-  | iteT u v w =>
+  | absT e => absT (subst_bvarT (S n) e a)
+  | appT e f =>
+    appT (subst_bvarT n e a) (subst_bvarT n f a)
+  | sT e => sT (subst_bvarT n e a)
+  | iteT e f g =>
     iteT
-      (subst_bvarT n u a)
-      (subst_bvarT n v a)
-      (subst_bvarT n w a)
-  | recT u v w =>
+      (subst_bvarT n e a)
+      (subst_bvarT n f a)
+      (subst_bvarT n g a)
+  | recT e f g =>
     recT
-      (subst_bvarT n u a)
-      (subst_bvarT n v a)
-      (subst_bvarT n w a)
-  | _ => u
+      (subst_bvarT n e a)
+      (subst_bvarT n f a)
+      (subst_bvarT n g a)
+  | _ => e
   end.
 
-(** [subst_fvarT x u a] is [u], where all the occurrences of the
+(** [subst_fvarT x e a] is [e], where all the occurrences of the
     free variable labeled by [x] are replaced by [a].
 *)
-Fixpoint subst_fvarT (x : identT) (u a : termT) :=
-  match u with
+Fixpoint subst_fvarT (x : fident) (e a : termT) :=
+  match e with
   | fvarT y => 
-    match x =? y with
+    match x =?f y with
     | true => a
-    | false => bvarT y
+    | false => fvarT y
     end
-  | absT u => absT (subst_fvarT x u a)
-  | appT u v =>
-    appT (subst_fvarT x u a) (subst_fvarT x v a)
-  | sT u => sT (subst_fvarT x u a)
-  | iteT u v w =>
+  | absT e => absT (subst_fvarT x e a)
+  | appT e f =>
+    appT (subst_fvarT x e a) (subst_fvarT x f a)
+  | sT e => sT (subst_fvarT x e a)
+  | iteT e f g =>
     iteT
-      (subst_fvarT x u a)
-      (subst_fvarT x v a)
-      (subst_fvarT x w a)
-  | recT u v w =>
+      (subst_fvarT x e a)
+      (subst_fvarT x f a)
+      (subst_fvarT x g a)
+  | recT e f g =>
     recT
-      (subst_fvarT x u a)
-      (subst_fvarT x v a)
-      (subst_fvarT x w a)
-  | _ => u
+      (subst_fvarT x e a)
+      (subst_fvarT x f a)
+      (subst_fvarT x g a)
+  | _ => e
   end.
