@@ -5,9 +5,12 @@
 *)
 
 Require Import Nat.
+Require Import PeanoNat.
 Require Import Logic.Decidable.
 Require Import Coq.Arith.Compare_dec.
 Require Import ident.
+
+Require Import ssreflect ssrfun ssrbool.
 
 Declare Scope system_t_term_scope.
 
@@ -114,7 +117,7 @@ Proof.
   induction e;
   intro m;
   [ |
-    destruct (dec_le n m) |
+    destruct (le_dec n m) |
     destruct (IHe (S m)) |
     destruct (IHe1 m); destruct (IHe2 m) | | |
     destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) | | 
@@ -125,8 +128,8 @@ Proof.
     right; intro Hn; inversion Hn; auto using bound_nclosed.
 Qed.
 
-(** [bound_closed n] is a decidable predicate.
-*)
+(* * [bound_closed n] is a decidable predicate.
+ *)
 Lemma bound_closed_decidable (e : termT) :
     decidable (bound_closed e).
 Proof.
@@ -136,6 +139,30 @@ Qed.
 (** ** Substitutions
 *)
 
+Fixpoint shift_bvarT (m n : nat) (e : termT) :=
+  match e with
+  | bvarT o =>
+    match ltb n o with
+    | true => bvarT (o + m)
+    | _ => bvarT o
+    end
+  | absT e => absT (shift_bvarT m (S n) e)
+  | appT e f =>
+    appT (shift_bvarT m n e) (shift_bvarT m n f)
+  | sT e => sT (shift_bvarT m n e)
+  | iteT e f g =>
+    iteT
+      (shift_bvarT m n e)
+      (shift_bvarT m n f)
+      (shift_bvarT m n g)
+  | recT e f g =>
+    recT
+      (shift_bvarT m n e)
+      (shift_bvarT m n f)
+      (shift_bvarT m n g)
+  | _ => e
+  end.
+
 (** [subst_bvarT n e a] is [e], where all the occurrences of the
     variable bound by the lambda at height [n] above the root are
     replaced by [a].
@@ -144,7 +171,7 @@ Fixpoint subst_bvarT (n : nat) (e a : termT) :=
   match e with
   | bvarT m => 
     match n =? m with
-    | true => a
+    | true => shift_bvarT n O a
     | false => bvarT m
     end
   | absT e => absT (subst_bvarT (S n) e a)
@@ -164,29 +191,126 @@ Fixpoint subst_bvarT (n : nat) (e a : termT) :=
   | _ => e
   end.
 
-(** [subst_fvarT x e a] is [e], where all the occurrences of the
-    free variable labeled by [x] are replaced by [a].
-*)
-Fixpoint subst_fvarT (x : fident) (e a : termT) :=
-  match e with
-  | fvarT y => 
-    match x =?f y with
-    | true => a
-    | false => fvarT y
-    end
-  | absT e => absT (subst_fvarT x e a)
-  | appT e f =>
-    appT (subst_fvarT x e a) (subst_fvarT x f a)
-  | sT e => sT (subst_fvarT x e a)
-  | iteT e f g =>
-    iteT
-      (subst_fvarT x e a)
-      (subst_fvarT x f a)
-      (subst_fvarT x g a)
-  | recT e f g =>
-    recT
-      (subst_fvarT x e a)
-      (subst_fvarT x f a)
-      (subst_fvarT x g a)
-  | _ => e
-  end.
+Notation "e [ n <- f ]" := (subst_bvarT n e f) (at level 50).
+
+Inductive one_reduction : termT -> termT -> Prop :=
+  | redex_beta :
+    forall e f : termT,
+    one_reduction (appT (absT e) f) (e[O <- f])
+  | redex_iteT_trueT :
+    forall e f : termT,
+    one_reduction (iteT trueT e f) e
+  | redex_iteT_falseT :
+    forall e f : termT,
+    one_reduction (iteT falseT e f) f
+  | redex_recT_oT :
+    forall e f : termT,
+    one_reduction (recT oT e f) e
+  | redex_recT_sT :
+    forall e f g : termT,
+    one_reduction (recT (sT e) f g) (appT g (recT e f g))
+  | redind_absT :
+    forall e f : termT,
+    one_reduction e f ->
+    one_reduction (absT e) (absT f)
+  | redind_appT_l :
+    forall e f g : termT,
+    one_reduction e f ->
+    one_reduction (appT e g) (appT f g)
+  | redind_appT_r :
+    forall e f g : termT,
+    one_reduction f g ->
+    one_reduction (appT e f) (appT e g)
+  | redind_iteT_l :
+    forall e f g h : termT,
+    one_reduction e f ->
+    one_reduction (iteT e g h) (iteT f g h)
+  | redind_iteT_c :
+    forall e f g h : termT,
+    one_reduction f g ->
+    one_reduction (iteT e f h) (iteT e g h)
+  | redind_iteT_r :
+    forall e f g h : termT,
+    one_reduction g h ->
+    one_reduction (iteT e f g) (iteT e f h)
+  | redind_sT :
+    forall e f : termT,
+    one_reduction e f ->
+    one_reduction (sT e) (sT f)
+  | redind_recT_l :
+    forall e f g h : termT,
+    one_reduction e f ->
+    one_reduction (recT e g h) (recT f g h)
+  | redind_recT_c :
+    forall e f g h : termT,
+    one_reduction f g ->
+    one_reduction (recT e f h) (recT e g h)
+  | redind_recT_r :
+    forall e f g h : termT,
+    one_reduction g h ->
+    one_reduction (recT e f g) (recT e f h).
+
+Inductive reduction : nat -> termT -> termT -> Prop :=
+  | red_refl_zero : forall e : termT, reduction O e e
+  | red_next :
+    forall n : nat, forall e f g : termT,
+    one_reduction e f -> reduction n f g -> 
+    reduction (S n) e g.
+
+Notation "e ->( n ) f" := (reduction n e f) (at level 80).
+
+Definition reduction_star (e f : termT) : Prop :=
+    exists n : nat, e ->(n) f.
+
+Notation "e ->* f" := (reduction_star e f) (at level 80).
+
+Lemma one_reduction_reduction_1 {e f : termT} :
+    one_reduction e f <-> (e ->(1) f).
+Proof.
+  constructor.
+  - eauto using reduction.
+  - intro Hred.
+    inversion Hred.
+    inversion H1.
+    rewrite H6 in H0.
+    exact H0.
+Qed.
+
+Lemma reduction_trans {m n : nat} {e f g : termT} :
+    (e ->(m) f) -> (f ->(n) g) -> (e ->(m + n) g).
+Proof.
+  move: e f g.
+  induction m;
+  move=> e f g Hm Hn;
+  simpl.
+  - inversion Hm.
+    exact Hn.
+  - inversion Hm.
+    eapply red_next.
+  --- exact H0.
+  --- eapply IHm.
+  ----- exact H1.
+  ----- auto.
+Qed.
+
+Lemma reduction_one_reduction {n : nat} {e f g : termT} :
+    (e ->(n) f) -> one_reduction f g -> (e ->(S n) g).
+Proof.
+  rewrite one_reduction_reduction_1.
+  rewrite <- (Nat.add_1_r n).
+  exact reduction_trans.
+Qed.
+
+#[export] Instance preorder_reduction_star :
+    RelationClasses.PreOrder reduction_star.
+Proof.
+  constructor.
+  - intro e.
+    exists O.
+    exact (red_refl_zero _).
+  - intros e f g Hred1 Hred2. 
+    destruct Hred1 as [m Hredm].
+    destruct Hred2 as [n Hredn].
+    exists (m + n).
+    exact (reduction_trans Hredm Hredn).
+Qed.
