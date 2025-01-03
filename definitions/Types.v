@@ -1,7 +1,8 @@
 Declare Scope system_t_type_scope.
+Open Scope system_t_type_scope.
 
 Require Import Nat.
-Require Import ident.
+Require Import Ident.
 
 Declare Module TIdent : IDENT.
 
@@ -9,7 +10,7 @@ Module TMap := TIdent.Map.
 
 Module TIdentFacts := IdentFacts TIdent.
 
-Infix "=?t" := TIdentFacts.eqb (at level 70).
+Infix "=?t" := TIdentFacts.eqb (at level 70) : system_t_type_scope.
 
 Definition tident := TIdent.t.
 
@@ -19,7 +20,7 @@ Inductive typeT :=
   | tvarT : tident -> typeT
   | funT : typeT -> typeT -> typeT.
 
-Notation "t ->T u" := (funT t u) (at level 80, right associativity).
+Notation "t ->T u" := (funT t u) (at level 80, right associativity) : system_t_type_scope.
 
 Fixpoint typeT_tsubst (x : tident) (a t : typeT) :=
   match t with

@@ -15,17 +15,24 @@ create-doc-folder:
 
 				@mkdir -p documentation
 
+				@mkdir -p documentation/definitions
+				@mkdir -p documentation/facts
+
 build-doc: | create-doc-folder
 				@echo "Building documentation."
 				@for f in definitions/*.v; do \
 						echo "Building documentation for file $${f}."; \
-						coqdoc -d documentation $${f}; \
+						coqdoc -d documentation/definitions $${f}; \
+				done
+				@for f in facts/*.v; do \
+						echo "Building documentation for file facts/$${f}."; \
+						coqdoc -d documentation/facts $${f}; \
 				done
 				
 
 clean:
 				@echo "Deleting build files."
-				@rm -rf definitions/*.vo definitions/*.vok definitions/*.vos definitions/*.glob definitions/.*.aux
+				@rm -rf definitions/*.vo definitions/*.vok definitions/*.vos definitions/*.glob definitions/.*.aux facts/*.vo facts/*.vok facts/*.vos facts/*.glob facts/.*.aux
 				@echo "Deleting documentation."
 				@rm -rf documentation
 

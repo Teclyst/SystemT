@@ -1,5 +1,5 @@
-Require Import types.
-Require Import terms.
+Require Import Types.
+Require Import Terms.
 Require Import FSets.FMaps.
 Require Import List.
 
@@ -16,6 +16,28 @@ Module Context.
     bmap : list typeT;
     fmap : FMap.t typeT
   }.
+
+  Definition bMapsTo (n : nat) (u : typeT) (G : t) : Prop :=
+    nth_error (Context.bmap G) n = Some u.
+  
+  Definition fMapsTo (x : fident) (u : typeT) (G : t) : Prop :=
+    FMap.MapsTo x u (Context.fmap G).
+
+  Lemma bMapsTo_fun {n : nat} {u v : typeT} {G : t} :
+      bMapsTo n u G -> bMapsTo n v G -> u = v.
+  Proof.
+    unfold bMapsTo.
+    intros Hmapu Hmapv.
+    rewrite Hmapu in Hmapv.
+    inversion Hmapv.
+    reflexivity.
+  Qed.
+
+  Lemma fMapsTo_fun {x : fident} {u v : typeT} {G : t} :
+      fMapsTo x u G -> fMapsTo x v G -> u = v.
+  Proof.
+    exact (@FMapFacts.MapsTo_fun _ _ _ _ _).
+  Qed.
 
   Definition empty : t := {|
     bmap := List.nil;
@@ -68,11 +90,11 @@ End Context.
 Inductive derivation : Context.t -> termT -> typeT -> Prop :=
   | bvarT_ax :
     forall G : Context.t, forall n : nat, forall t : typeT,
-    nth_error (Context.bmap G) n = Some t ->
+    Context.bMapsTo n t G ->
     derivation G (bvarT n) t
   | fvarT_ax :
     forall G : Context.t, forall x : fident, forall t : typeT,
-    FMap.MapsTo x t (Context.fmap G) ->
+    Context.fMapsTo x t G ->
     derivation G (fvarT x) t
   | absT_in :
     forall G : Context.t, forall e : termT, forall t u : typeT,
@@ -105,34 +127,6 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
     derivation G f (t ->T natT ->T t) ->
     derivation G g natT ->
     derivation G (recT e f g) t.
-
-(** Given a type substitution and a typing derivation, applying
-    that substitution to the context and all types appearing in the
-    derivation yields a new derivation.
-*)
-Lemma derivation_par_tsubst
-  {G : Context.t} {e : termT} {t : typeT}
-  (s : TMap.t typeT) (D : derivation G e t) :
-  derivation (Context.context_par_tsubst s G) e (typeT_par_tsubst s t).
-Proof.
-  induction D;
-  eauto using derivation;
-  simpl.
-  - apply bvarT_ax.
-    simpl.
-    apply List.map_nth_error.
-    exact H.
-  - apply fvarT_ax.
-    simpl.
-    apply FMap.map_1.
-    exact H.
-Qed.
-
-Lemma typing_id (t : typeT) :
-    derivation Context.empty (absT (bvarT O)) (t ->T t).
-Proof.
-  eauto using derivation.
-Qed.
 
 Close Scope system_t_type_scope.
 Close Scope system_t_term_scope.

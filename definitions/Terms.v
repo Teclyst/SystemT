@@ -8,11 +8,12 @@ Require Import Nat.
 Require Import PeanoNat.
 Require Import Logic.Decidable.
 Require Import Coq.Arith.Compare_dec.
-Require Import ident.
+Require Import Ident.
 
 Require Import ssreflect ssrfun ssrbool.
 
 Declare Scope system_t_term_scope.
+Open Scope system_t_term_scope.
 
 (** ** Terms
 *)
@@ -21,7 +22,7 @@ Declare Module FIdent : IDENT.
 
 Module FIdentFacts := IdentFacts FIdent.
 
-Infix "=?f" := FIdentFacts.eqb (at level 70).
+Infix "=?f" := FIdentFacts.eqb (at level 70) : system_t_term_scope.
 
 (** [idenT] is the label type for free variables.
 *)
@@ -67,7 +68,7 @@ Inductive bound_nclosed : nat -> termT -> Prop :=
     forall n : nat, forall x : fident,
     bound_nclosed n (fvarT x)
   | bvarT_closed :
-    forall n x : nat, x <= n ->
+    forall n x : nat, x < n ->
     bound_nclosed n (bvarT x)
   | absT_closed :
     forall n : nat, forall e : termT,
@@ -117,7 +118,7 @@ Proof.
   induction e;
   intro m;
   [ |
-    destruct (le_dec n m) |
+    destruct (lt_dec n m) |
     destruct (IHe (S m)) |
     destruct (IHe1 m); destruct (IHe2 m) | | |
     destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) | | 
@@ -139,59 +140,64 @@ Qed.
 (** ** Substitutions
 *)
 
-Fixpoint shift_bvarT (m n : nat) (e : termT) :=
+Fixpoint bshift (n : nat) (e : termT) :=
   match e with
-  | bvarT o =>
-    match ltb n o with
-    | true => bvarT (o + m)
-    | _ => bvarT o
+  | bvarT m =>
+    match leb n m with
+    | true => bvarT (S m)
+    | _ => bvarT m
     end
-  | absT e => absT (shift_bvarT m (S n) e)
+  | absT e => absT (bshift (S n) e)
   | appT e f =>
-    appT (shift_bvarT m n e) (shift_bvarT m n f)
-  | sT e => sT (shift_bvarT m n e)
+    appT (bshift n e) (bshift n f)
+  | sT e => sT (bshift n e)
   | iteT e f g =>
     iteT
-      (shift_bvarT m n e)
-      (shift_bvarT m n f)
-      (shift_bvarT m n g)
+      (bshift n e)
+      (bshift n f)
+      (bshift n g)
   | recT e f g =>
     recT
-      (shift_bvarT m n e)
-      (shift_bvarT m n f)
-      (shift_bvarT m n g)
+      (bshift n e)
+      (bshift n f)
+      (bshift n g)
   | _ => e
   end.
 
-(** [subst_bvarT n e a] is [e], where all the occurrences of the
+(** [bsubst n e a] is [e], where all the occurrences of the
     variable bound by the lambda at height [n] above the root are
     replaced by [a].
 *)
-Fixpoint subst_bvarT (n : nat) (e a : termT) :=
+Fixpoint bsubst (n : nat) (e a : termT) :=
   match e with
   | bvarT m => 
-    match n =? m with
-    | true => shift_bvarT n O a
-    | false => bvarT m
+    match n ?= m with
+    | Eq => a
+    | Gt => bvarT m
+    | Lt =>
+      match m with
+      | S m => bvarT m
+      | O => bvarT O (* This case cannot happen in practice. *)
+      end
     end
-  | absT e => absT (subst_bvarT (S n) e a)
+  | absT e => absT (bsubst (S n) e (bshift O a))
   | appT e f =>
-    appT (subst_bvarT n e a) (subst_bvarT n f a)
-  | sT e => sT (subst_bvarT n e a)
+    appT (bsubst n e a) (bsubst n f a)
+  | sT e => sT (bsubst n e a)
   | iteT e f g =>
     iteT
-      (subst_bvarT n e a)
-      (subst_bvarT n f a)
-      (subst_bvarT n g a)
+      (bsubst n e a)
+      (bsubst n f a)
+      (bsubst n g a)
   | recT e f g =>
     recT
-      (subst_bvarT n e a)
-      (subst_bvarT n f a)
-      (subst_bvarT n g a)
+      (bsubst n e a)
+      (bsubst n f a)
+      (bsubst n g a)
   | _ => e
   end.
 
-Notation "e [ n <- f ]" := (subst_bvarT n e f) (at level 50).
+Notation "e [ n <- f ]" := (bsubst n e f) (at level 50).
 
 Inductive one_reduction : termT -> termT -> Prop :=
   | redex_beta :
@@ -205,10 +211,10 @@ Inductive one_reduction : termT -> termT -> Prop :=
     one_reduction (iteT falseT e f) f
   | redex_recT_oT :
     forall e f : termT,
-    one_reduction (recT oT e f) e
+    one_reduction (recT e f oT) e
   | redex_recT_sT :
     forall e f g : termT,
-    one_reduction (recT (sT e) f g) (appT g (recT e f g))
+    one_reduction (recT e f (sT g)) (appT (appT f (recT e f g)) g)
   | redind_absT :
     forall e f : termT,
     one_reduction e f ->
@@ -257,12 +263,12 @@ Inductive reduction : nat -> termT -> termT -> Prop :=
     one_reduction e f -> reduction n f g -> 
     reduction (S n) e g.
 
-Notation "e ->( n ) f" := (reduction n e f) (at level 80).
+Notation "e ->( n ) f" := (reduction n e f) (at level 80) : system_t_term_scope.
 
 Definition reduction_star (e f : termT) : Prop :=
     exists n : nat, e ->(n) f.
 
-Notation "e ->* f" := (reduction_star e f) (at level 80).
+Notation "e ->* f" := (reduction_star e f) (at level 80) : system_t_term_scope.
 
 Lemma one_reduction_reduction_1 {e f : termT} :
     one_reduction e f <-> (e ->(1) f).
