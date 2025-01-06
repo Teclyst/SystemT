@@ -95,6 +95,14 @@ Proof.
     exact H0.
 Qed.
 
+Lemma one_reduction_reduction_star{e f : termT} :
+    (e ->1 f) -> (e ->* f).
+Proof.
+  exists 1.
+  rewrite <- one_reduction_reduction_1.
+  assumption.
+Qed.
+
 Lemma reduction_trans {m n : nat} {e f g : termT} :
     (e ->(m) f) -> (f ->(n) g) -> (e ->(m + n) g).
 Proof.
@@ -133,6 +141,145 @@ Proof.
     exists (m + n).
     exact (reduction_trans Hredm Hredn).
 Qed.
+
+Lemma reduction_absT {e f : termT} {n : nat} :
+    (e ->(n) f) -> (absT e ->(n) absT f).
+Proof.
+  intro Hred.
+  induction Hred.
+  - eauto using reduction.
+  - apply redind_absT in H.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_appT {e f g h : termT} {m n : nat} :
+    (e ->(m) g) -> (f ->(n) h) -> (appT e f ->(m + n) appT g h).
+Proof.
+  intro Hred1.
+  move: f h.
+  induction Hred1; simpl; move=> f' h' Hred2.
+  - move: e.
+    induction Hred2.
+  --- eauto using reduction.
+  --- intro h.
+      apply (redind_appT_r h) in H.
+      eauto using reduction. 
+  - apply (redind_appT_l _ _ f') in H.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_iteT {e f g h i j : termT} {m n o : nat} :
+    (e ->(m) h) -> (f ->(n) i) -> (g ->(o) j) ->
+    (iteT e f g ->(m + n + o) iteT h i j).
+Proof.
+  move=> Hred1.
+  move: f g i j.
+  induction Hred1;
+  simpl;
+  move=> f' g' i' j' Hred2.
+  - move: e g' j'.
+    induction Hred2;
+    move=> e' g' j' Hred3.
+  --- move: e e'.
+      induction Hred3.
+  ----- eauto using reduction.
+  ----- move=> h i.
+        apply (redind_iteT_r i h) in H.
+        eauto using reduction. 
+  --- apply (redind_iteT_c e' _ _  g') in H.
+      eauto using reduction. 
+  - apply (redind_iteT_l _ _ f' g') in H.
+    intro Hred3.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_sT {e f : termT} {n : nat} :
+    (e ->(n) f) -> (sT e ->(n) sT f).
+Proof.
+  intro Hred.
+  induction Hred.
+  - eauto using reduction.
+  - apply redind_sT in H.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_recT {e f g h i j : termT} {m n o : nat} :
+    (e ->(m) h) -> (f ->(n) i) -> (g ->(o) j) ->
+    (recT e f g ->(m + n + o) recT h i j).
+Proof.
+  move=> Hred1.
+  move: f g i j.
+  induction Hred1;
+  simpl;
+  move=> f' g' i' j' Hred2.
+  - move: e g' j'.
+    induction Hred2;
+    move=> e' g' j' Hred3.
+  --- move: e e'.
+      induction Hred3.
+  ----- eauto using reduction.
+  ----- move=> h i.
+        apply (redind_recT_r i h) in H.
+        eauto using reduction. 
+  --- apply (redind_recT_c e' _ _  g') in H.
+      eauto using reduction. 
+  - apply (redind_recT_l _ _ f' g') in H.
+    intro Hred3.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_star_absT {e f : termT} :
+    (e ->* f) -> (absT e ->* absT f).
+Proof.
+  intro Hred.
+  destruct Hred as [m Hm].
+  exists m.
+  eauto using reduction_absT.
+Qed.
+
+Lemma reduction_star_appT {e f g h : termT} :
+    (e ->* g) -> (f ->* h) -> (appT e f ->* appT g h).
+Proof.
+  intros Hred1 Hred2.
+  destruct Hred1 as [o Ho].
+  destruct Hred2 as [p Hp].
+  exists (o + p).
+  eauto using reduction_appT.
+Qed.
+
+Lemma reduction_star_iteT {e f g h i j : termT} :
+    (e ->* h) -> (f ->* i) -> (g ->* j) -> (iteT e f g ->* iteT h i j).
+Proof.
+  intros Hred1 Hred2 Hred3.
+  destruct Hred1 as [o Ho].
+  destruct Hred2 as [p Hp].
+  destruct Hred3 as [q Hq].
+  exists (o + p + q).
+  eauto using reduction_iteT.
+Qed.
+
+Lemma reduction_star_sT {e f : termT} :
+    (e ->* f) -> (sT e ->* sT f).
+Proof.
+  intro Hred.
+  destruct Hred as [m Hm].
+  exists m.
+  eauto using reduction_sT.
+Qed.
+
+Lemma reduction_star_recT {e f g h i j : termT} :
+    (e ->* h) -> (f ->* i) -> (g ->* j) ->
+    (recT e f g ->* recT h i j).
+Proof.
+  intros Hred1 Hred2 Hred3.
+  destruct Hred1 as [o Ho].
+  destruct Hred2 as [p Hp].
+  destruct Hred3 as [q Hq].
+  exists (o + p + q).
+  eauto using reduction_recT.
+Qed.
+
+Hint Resolve one_reduction_reduction_star reduction_star_absT reduction_star_appT reduction_star_iteT reduction_star_sT reduction_star_recT : reduction_star_lemmas.
 
 Definition reductible (e : termT) : Prop :=
     exists f : termT, e ->1 f.
@@ -307,8 +454,6 @@ Proof.
     exact Heq.
   - exact e. 
 Defined.
-
-Print reduce.
 
 Lemma normal_form_strongly_normalizing {e : termT} :
     ~ reductible e -> strongly_normalizing e.
