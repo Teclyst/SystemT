@@ -1,5 +1,2 @@
--R definitions SystemT
-definitions
-
--R facts SystemT
-facts
+-R theories SystemT
+theories

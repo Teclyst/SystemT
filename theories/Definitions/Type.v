@@ -1,8 +1,8 @@
+Require Import Nat.
+Require Import Definitions.Ident.
+
 Declare Scope system_t_type_scope.
 Open Scope system_t_type_scope.
-
-Require Import Nat.
-Require Import Ident.
 
 Declare Module TIdent : IDENT.
 

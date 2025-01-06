@@ -1,8 +1,10 @@
-Require Import Ident.
-Require Import Types.
-Require Import Terms.
-Require Import Reduction.
-Require Import Typing.
+Require Import Definitions.Ident.
+Require Import Definitions.Type.
+Require Import Definitions.Term.
+Require Import Definitions.Reduction.
+Require Import Definitions.Typing.
+Require Import Theorems.Reduction.
+
 Require Import PeanoNat.
 Require Import List.
 

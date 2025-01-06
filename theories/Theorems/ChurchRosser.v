@@ -1,5 +1,7 @@
-Require Import Terms.
-Require Import Reduction.
+Require Import Definitions.Term.
+Require Import Definitions.Reduction.
+Require Import Theorems.Reduction.
+Require Import Theorems.Substitution.
 Require Import Lia.
 
 Require Import ssreflect ssrfun ssrbool.
@@ -71,212 +73,7 @@ Definition par_reduction_star (e f : termT) : Prop :=
 
 Notation "e =>* f" := (par_reduction_star e f) (at level 80).
 
-Lemma bshift_bshift {e : termT} {m n : nat} :
-    m <= n -> bshift m (bshift n e) = bshift (S n) (bshift m e).
-Proof.
-  move: m n.
-  induction e;
-  move=> m' n' H4;
-  eauto;
-  simpl.
-  - destruct (PeanoNat.Nat.leb n' n) eqn:H1;
-    destruct (PeanoNat.Nat.leb m' n) eqn:H2;
-    move/ PeanoNat.Nat.leb_spec0 in H1;
-    move/ PeanoNat.Nat.leb_spec0 in H2;
-    try lia;
-    simpl.
-  --- rewrite Compare_dec.leb_correct.
-      lia.
-      rewrite Compare_dec.leb_correct.
-      auto.
-      reflexivity.
-  --- rewrite Compare_dec.leb_correct.
-      auto.
-      rewrite Compare_dec.leb_correct_conv.
-      lia.
-      reflexivity.
-  --- rewrite Compare_dec.leb_correct_conv.
-      lia.
-      destruct n.
-  ----- reflexivity.
-  ----- rewrite Compare_dec.leb_correct_conv.
-        lia.
-        reflexivity.
-  - rewrite IHe.
-    lia.
-    reflexivity.
-  - rewrite (IHe1 _ _ H4).
-    rewrite (IHe2 _ _ H4).
-    reflexivity.
-  - rewrite (IHe1 _ _ H4).
-    rewrite (IHe2 _ _ H4).
-    rewrite (IHe3 _ _ H4).
-    reflexivity.
-  - rewrite (IHe _ _ H4).
-    reflexivity.
-  - rewrite (IHe1 _ _ H4).
-    rewrite (IHe2 _ _ H4).
-    rewrite (IHe3 _ _ H4).
-    reflexivity.
-Qed.
-
-Lemma bshift_subst_eq {e f : termT} {n : nat} :
-    (bshift n e) [n <- f] = e.
-Proof.
-  move: f n.
-  induction e;
-  move=> g m;
-  eauto;
-  simpl;
-  try (f_equal;
-    auto).
-  destruct (PeanoNat.Nat.leb m n) eqn:H1;
-  move/ PeanoNat.Nat.leb_spec0 in H1;
-  simpl.
-  - destruct (PeanoNat.Nat.compare m (S n)) eqn:H2.
-  --- rewrite PeanoNat.Nat.compare_eq_iff in H2.
-        lia.
-  --- rewrite PeanoNat.Nat.compare_lt_iff in H2.
-        reflexivity.
-  --- try rewrite PeanoNat.Nat.compare_gt_iff in H2.
-        lia.
-  - destruct (PeanoNat.Nat.compare m n) eqn:H2.
-  --- rewrite PeanoNat.Nat.compare_eq_iff in H2.
-        lia.
-  --- rewrite PeanoNat.Nat.compare_lt_iff in H2.
-        lia.
-  --- try rewrite PeanoNat.Nat.compare_gt_iff in H2.
-        reflexivity.
-Qed.
-
-Lemma bshift_subst {e f : termT} {m n : nat} :
-    m <= n -> bshift n (e[m <- f]) = (bshift (S n) e)[m <- bshift n f].
-Proof.
-  move: f m n.
-  induction e;
-  move=> f' m' n' H4;
-  eauto.
-  - simpl;
-    destruct (PeanoNat.Nat.compare m' n') eqn:H1;
-    destruct (PeanoNat.Nat.compare m' n) eqn:H2;
-    destruct (PeanoNat.Nat.compare n n') eqn:H3;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H1;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H2;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H3;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H1;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H2;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H3;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H1;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H2;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H3;
-    destruct n;
-    try lia.
-  --- rewrite H2.
-      rewrite H3.
-      simpl.
-      rewrite PeanoNat.Nat.compare_refl.
-      reflexivity.
-  --- rewrite H2.
-      rewrite <- H3.
-      destruct (PeanoNat.Nat.leb) eqn:Habs;
-      try (move/ PeanoNat.Nat.leb_spec0 in Habs;
-      lia).
-      simpl.
-      rewrite PeanoNat.Nat.compare_refl.
-      reflexivity.
-  --- rewrite H1.
-      simpl.
-      rewrite PeanoNat.Nat.lt_succ_r in H3.
-      move/ PeanoNat.Nat.leb_spec0 in H3.
-      rewrite H3.
-      simpl.
-      have Hlt : n' < S (S n).
-      lia.
-      rewrite <- PeanoNat.Nat.compare_lt_iff in Hlt.
-      rewrite Hlt.
-      reflexivity.
-  --- simpl.
-      rewrite (Compare_dec.leb_correct_conv _ _ H3).
-      rewrite <- PeanoNat.Nat.compare_gt_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- simpl. 
-      rewrite (Compare_dec.leb_correct_conv _ _ H3).
-      rewrite (Compare_dec.leb_correct_conv _ _).
-      lia.
-      simpl.
-      rewrite <- PeanoNat.Nat.compare_gt_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- simpl.
-      rewrite <- PeanoNat.Nat.compare_eq_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- rewrite (Compare_dec.leb_correct_conv _ _).
-      lia.
-      simpl.
-      rewrite <- PeanoNat.Nat.compare_eq_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- simpl.
-      rewrite (Compare_dec.leb_correct_conv _ _).
-      lia.
-      simpl.
-      rewrite <- PeanoNat.Nat.compare_lt_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- simpl.
-      rewrite (Compare_dec.leb_correct_conv _ _).
-      lia.
-      simpl.
-      rewrite <- PeanoNat.Nat.compare_lt_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- simpl.
-      rewrite (Compare_dec.leb_correct _ _).
-      lia.
-      simpl.
-      have Hlt : m' < S (S n).
-      lia.
-      rewrite <- PeanoNat.Nat.compare_lt_iff in Hlt.
-      rewrite Hlt.
-      reflexivity.
-  --- simpl.
-      rewrite (Compare_dec.leb_correct_conv _ _).
-      lia.
-      rewrite <- PeanoNat.Nat.compare_gt_iff in H2.
-      rewrite H2.
-      reflexivity.
-  --- simpl.
-      rewrite (Compare_dec.leb_correct_conv _ _).
-      auto.
-      rewrite (Compare_dec.leb_correct_conv _ _).
-      lia.
-      simpl.
-      rewrite <- PeanoNat.Nat.compare_gt_iff in H2.
-      rewrite H2.
-      reflexivity.
-  - simpl.
-    rewrite bshift_bshift.
-    lia.
-    f_equal.
-    apply IHe.
-    lia.
-  - simpl.
-    f_equal;
-    eauto.
-  - simpl.
-    f_equal;
-    eauto.
-  - simpl.
-    f_equal;
-    eauto.
-  - simpl.
-    f_equal;
-    eauto.
-Qed.
-
-Lemma parallel_subst_bshift {e f : termT} {n : nat} :
+Lemma parallel_bsubst_bshift {e f : termT} {n : nat} :
   e =>1 f -> bshift n e =>1 bshift n f.
 Proof.
   move => Hred1.
@@ -285,7 +82,7 @@ Proof.
   move=> n;
   eauto using par_one_reduction.
   - simpl.
-    rewrite bshift_subst.
+    rewrite bshift_bsubst.
     lia.
     eapply par_redex_beta;
     eauto.
@@ -294,157 +91,7 @@ Proof.
     eauto.
 Qed.
 
-Lemma bshift_subst' {e f : termT} {m n : nat} :
-    m <= n -> bshift m (e[n <- f]) = (bshift m e) [S n <- bshift m f].
-Proof.
-  move: f m n.
-  induction e;
-  move=> f' m' n' Hle;
-  eauto; simpl;
-  try (f_equal;
-    auto).
-  - destruct (PeanoNat.Nat.compare m' n) eqn:H1;
-    destruct (PeanoNat.Nat.compare n' n) eqn:H2;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H1;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H2;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H1;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H2;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H1;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H2;
-    try lia.
-  --- move/ PeanoNat.Nat.leb_spec0 in Hle.
-      rewrite H2 in Hle.
-      rewrite Hle.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_eq_iff _ _).2;
-      auto.
-  --- rewrite H1.
-      rewrite PeanoNat.Nat.leb_refl.
-      simpl.  
-      rewrite PeanoNat.Nat.leb_refl.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2;
-      auto.
-  --- rewrite Compare_dec.leb_correct.
-      lia.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_eq_iff _ _).2;
-      auto.
-  --- destruct n.
-  ----- lia.
-  ----- simpl.
-        rewrite Compare_dec.leb_correct.
-        lia.
-        rewrite Compare_dec.leb_correct.
-        lia.
-        simpl.
-        rewrite (PeanoNat.Nat.compare_lt_iff _ _).2;
-        auto.
-  --- simpl.
-      rewrite Compare_dec.leb_correct.
-      lia.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2;
-      auto.
-  --- simpl.
-      rewrite Compare_dec.leb_correct_conv.
-      lia.
-      simpl.
-      destruct n.
-  ----- reflexivity.
-  ----- rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-        lia.
-        reflexivity.
-  - f_equal.
-    rewrite bshift_bshift.
-    lia.
-    apply IHe.
-    lia.
-Qed.
-
-Lemma bsubst_bsubst {e f g : termT} {m n : nat} :
-    m <= n -> e[m <- f][n <- g] = e[S n <- bshift m g][m <- f[n <- g]].
-Proof.
-  move: m n f g.
-  induction e;
-  move=> m' n' f' g' Hle;
-  eauto;
-  [ | | simpl; f_equal; auto ..].
-  - destruct (PeanoNat.Nat.compare m' n) eqn:H1;
-    destruct (PeanoNat.Nat.compare (S n') n) eqn:H2;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H1;
-    try rewrite PeanoNat.Nat.compare_eq_iff in H2;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H1;
-    try rewrite PeanoNat.Nat.compare_lt_iff in H2;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H1;
-    try rewrite PeanoNat.Nat.compare_gt_iff in H2;
-    destruct n;
-    try lia;
-    simpl.
-  --- rewrite (PeanoNat.Nat.compare_eq_iff _ _).2.
-      assumption.
-      reflexivity.
-  --- rewrite (PeanoNat.Nat.compare_gt_iff n' _).2.
-      lia.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_eq_iff _ _).2;
-      auto.
-  --- rewrite (PeanoNat.Nat.compare_lt_iff _ _).2.
-      assumption.
-      rewrite (PeanoNat.Nat.compare_eq_iff _ _).2.
-      lia.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_eq_iff _ _).2.
-      lia.
-      simpl.
-      rewrite bshift_subst_eq.
-      reflexivity.
-  --- rewrite (PeanoNat.Nat.compare_lt_iff _ _).2.
-      assumption.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_lt_iff _ _).2.
-      lia.
-      destruct n;
-      simpl.
-  ------ lia.
-  ------ rewrite (PeanoNat.Nat.compare_lt_iff _ _).2.
-         lia.
-         reflexivity.
-  --- rewrite (PeanoNat.Nat.compare_lt_iff _ _).2.
-      assumption.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      lia.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_lt_iff _ _).2.
-      assumption.
-      reflexivity.
-  --- rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      assumption.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      lia.
-      reflexivity.
-  --- rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      assumption.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      lia.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      lia.
-      simpl.
-      rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
-      assumption.
-      reflexivity.
-  - simpl.
-    f_equal.
-    rewrite bshift_bshift.
-    lia.
-    rewrite (@bshift_subst');
-    try apply IHe;
-    lia.
-Qed.
-
-Lemma parallel_subst {e f g h : termT} {n : nat} :
+Lemma parallel_bsubst {e f g h : termT} {n : nat} :
     e =>1 g -> f =>1 h -> e[n <- f] =>1 g[n <- h].
 Proof.
   intro Hred1.
@@ -459,14 +106,14 @@ Proof.
       eauto using par_one_reduction.
   --- apply par_redind_absT.
       apply IHe.
-      exact (parallel_subst_bshift Hred2).
+      exact (parallel_bsubst_bshift Hred2).
   - move=> n' f' h' Hred2;
     simpl.
     rewrite bsubst_bsubst.
     lia.
     apply par_redex_beta.
   --- apply IHHred1_1.
-      eauto using parallel_subst_bshift.
+      eauto using parallel_bsubst_bshift.
   --- apply IHHred1_2.
       assumption.
   - move=> n' f' h' Hred2.
@@ -477,7 +124,7 @@ Proof.
     apply par_redind_absT;
     fold bsubst;
     apply IHHred1.
-    apply parallel_subst_bshift.
+    apply parallel_bsubst_bshift.
     exact Hred2.
 Qed.
 
@@ -503,19 +150,19 @@ Proof.
       destruct Hi.
       destruct Hj.
       constructor;
-      apply parallel_subst;
+      apply parallel_bsubst;
       auto.
   --- inversion H1;
       destruct (IHHred1_2 h0) as [i Hi];
       auto;
       destruct Hi.
   ----- exists (g[O <- i]).
-        eauto using par_one_reduction, parallel_subst.
+        eauto using par_one_reduction, parallel_bsubst.
   ----- destruct (IHHred1_1 f1) as [j Hj];
         auto;
         destruct Hj.
         exists (j[O <- i]);
-        eauto using par_one_reduction, parallel_subst.
+        eauto using par_one_reduction, parallel_bsubst.
   - inversion Hred2.
     eauto using par_one_reduction.
   --- apply IHHred1.
@@ -573,7 +220,7 @@ Proof.
       destruct (IHHred1_2 h0 H3) as [i Hi];
       destruct Hi.
   ----- exists (g0[0 <- i]).
-        eauto using par_one_reduction, parallel_subst.
+        eauto using par_one_reduction, parallel_bsubst.
   ----- destruct (IHHred1_1 (absT g0)) as [j Hj].
         rewrite <- H.
         eauto using par_one_reduction.
@@ -582,10 +229,10 @@ Proof.
         inversion H9.
   ------- rewrite <- H12 in H10.
           inversion H10;
-          eauto using par_one_reduction, parallel_subst.
+          eauto using par_one_reduction, parallel_bsubst.
   ------- rewrite <- H13 in H10.
           inversion H10;
-          eauto using par_one_reduction, parallel_subst.
+          eauto using par_one_reduction, parallel_bsubst.
   --- destruct (IHHred1_1 g0 H1) as [k Hk].
       destruct (IHHred1_2 h0 H3) as [l Hl].
       destruct Hk.
@@ -710,104 +357,6 @@ Proof.
   eauto using par_reduction, one_reduction_par_one_reduction.
 Qed.
 
-Lemma one_reduction_subst_l {e f g : termT} {n : nat} :
-    (e ->1 f) -> (e[n <- g] ->1 f[n <- g]).
-Proof.
-  move=> Hred.
-  move: g n.
-  induction Hred;
-  move=> g' n;
-  eauto using one_reduction.
-  - rewrite bsubst_bsubst.
-    lia.
-    apply redex_beta.
-  - simpl.
-    eauto using one_reduction.
-Qed.
-
-Lemma bshift_one_reduction {e f: termT} {n : nat} :
-    (e ->1 f) -> (bshift n e ->1 bshift n f).
-Proof.
-  move => Hred.
-  move: n.
-  induction Hred;
-  move=> n;
-  simpl;
-  eauto using one_reduction.
-  rewrite bshift_subst.
-  lia.
-  eauto using one_reduction.
-Qed.
-
-Lemma reduction_subst_l {e f g : termT} {m n : nat} :
-    (e ->(m) f) -> (e[n <- g] ->(m) f[n <- g]).
-Proof.
-  move=> Hred.
-  move: g n.
-  induction Hred;
-  move=> g' n';
-  eauto using reduction, one_reduction_subst_l.
-Qed.
-
-Lemma reduction_star_subst_l {e f g : termT} {n : nat} :
-    (e ->* f) -> (e[n <- g] ->* f[n <- g]).
-Proof.
-  move=> Hred.
-  destruct Hred as [m Hred].
-  exists m.
-  apply reduction_subst_l.
-  assumption.
-Qed.
-
-Lemma one_reduction_subst_r {e f g : termT} {n : nat} :
-    (f ->1 g) -> (e[n <- f] ->* e[n <- g]).
-Proof.
-  move: f g n.
-  induction e;
-  move => f' g' m Hred;
-  simpl;
-  eauto with reduction_star_lemmas;
-  try reflexivity.
-  - simpl.
-    destruct (PeanoNat.Nat.compare m n); try reflexivity.
-    eauto with reduction_star_lemmas.
-  - apply reduction_star_absT.
-    apply IHe.
-    apply bshift_one_reduction.
-    assumption.
-Qed.
-
-Lemma reduction_subst_r {e f g : termT} {m n : nat} :
-    (f ->(m) g) -> (e[n <- f] ->* e[n <- g]).
-Proof.
-  move=> Hred.
-  move: e n.
-  induction Hred;
-  move=> e' n'.
-  - reflexivity.
-  - transitivity (e'[n' <- f]).
-  --- apply one_reduction_subst_r.
-      assumption.
-  --- auto.
-Qed.
-
-Lemma reduction_star_subst_r {e f g : termT} {n : nat} :
-    (f ->* g) -> (e[n <- f] ->* e[n <- g]).
-Proof.
-  move=> Hred.
-  destruct Hred as [m Hred].
-  eapply reduction_subst_r.
-  exact Hred.
-Qed.
-
-Lemma reduction_star_subst {e f g h : termT} {n : nat} :
-    (e ->* g) -> (f ->* h) -> (e[n <- f] ->* g[n <- h]).
-Proof.
-  intros Hredl Hredr.
-  transitivity (g[n <-f]);
-  eauto using reduction_star_subst_l, reduction_star_subst_r.
-Qed.
-
 Lemma par_one_reduction_reduction_star {e f : termT} :
     (e =>1 f) -> (e ->* f).
 Proof.
@@ -819,7 +368,7 @@ Proof.
   --- exists 1.
       rewrite <- one_reduction_reduction_1.
       eauto using one_reduction.
-  --- apply reduction_star_subst;
+  --- apply reduction_star_bsubst;
       assumption.
   - transitivity e.
   --- exists 1.

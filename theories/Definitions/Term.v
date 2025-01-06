@@ -1,4 +1,4 @@
-(** * Terms
+(** * Term
 
     In this file, System-T terms are defined, with a few base notions
     related to them (closedness, substitutions).
@@ -8,7 +8,7 @@ Require Import Nat.
 Require Import PeanoNat.
 Require Import Logic.Decidable.
 Require Import Coq.Arith.Compare_dec.
-Require Import Ident.
+Require Import Definitions.Ident.
 
 Require Import ssreflect ssrfun ssrbool.
 
@@ -198,3 +198,7 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   end.
 
 Notation "e [ n <- f ]" := (bsubst n e f) (at level 50).
+
+Module FMap := FIdent.Map.
+
+Module FMapFacts := Coq.FSets.FMapFacts.WFacts FMap.

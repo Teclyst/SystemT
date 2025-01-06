@@ -1,6 +1,5 @@
 KNOWNTARGETS 			:= CoqMakefile
 KNOWNFILES   			:= Makefile _CoqProject
-DEFINITIONS_FILES := definitions/*.v
 
 .DEFAULT_GOAL := invoke-coqmakefile
 
@@ -15,24 +14,24 @@ create-doc-folder:
 
 				@mkdir -p documentation
 
-				@mkdir -p documentation/definitions
-				@mkdir -p documentation/facts
+				@mkdir -p documentation/Definitions
+				@mkdir -p documentation/Theorems
 
 build-doc: | create-doc-folder
 				@echo "Building documentation."
-				@for f in definitions/*.v; do \
+				@for f in theories/Definitions/*.v; do \
 						echo "Building documentation for file $${f}."; \
-						coqdoc -d documentation/definitions $${f}; \
+						coqdoc -d documentation/Definitions $${f}; \
 				done
-				@for f in facts/*.v; do \
-						echo "Building documentation for file facts/$${f}."; \
-						coqdoc -d documentation/facts $${f}; \
-				done
-				
+				@for f in theories/Theorems/*.v; do \
+						echo "Building documentation for file $${f}."; \
+						coqdoc -d documentation/Theorems $${f}; \
+				done	
 
 clean:
 				@echo "Deleting build files."
-				@rm -rf definitions/*.vo definitions/*.vok definitions/*.vos definitions/*.glob definitions/.*.aux facts/*.vo facts/*.vok facts/*.vos facts/*.glob facts/.*.aux
+				@rm -rf .CoqMakefile.d CoqMakefile CoqMakefile.conf .lia.cache
+				@rm -rf theories/Definitions/*.vo theories/Definitions/*.vok theories/Definitions/*.vos theories/Definitions/*.glob theories/Definitions/.*.aux theories/Theorems/*.vo theories/Theorems/*.vok theories/Theorems/*.vos theories/Theorems/*.glob theories/Theorems/.*.aux
 				@echo "Deleting documentation."
 				@rm -rf documentation
 
