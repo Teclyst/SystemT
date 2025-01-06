@@ -1,6 +1,7 @@
 Require Import Ident.
 Require Import Types.
 Require Import Terms.
+Require Import Reduction.
 Require Import Typing.
 Require Import PeanoNat.
 Require Import List.
