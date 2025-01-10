@@ -4,10 +4,7 @@ Require Import Definitions.Term.
 Require Import Nat.
 Require Import PeanoNat.
 Require Import Logic.Decidable.
-Require Import Coq.Arith.Compare_dec.
 Require Import Init.Wf.
-
-Require Import ssreflect ssrfun ssrbool.
 
 Open Scope system_t_term_scope.
 
@@ -68,7 +65,7 @@ Inductive one_reduction : termT -> termT -> Prop :=
     one_reduction g h ->
     one_reduction (recT e f g) (recT e f h).
 
-Notation "e ->1 f" := (one_reduction e f) (at level 80) : system_t_term_scope.
+Notation "e ->1 f" := (one_reduction e f) (at level 70) : system_t_term_scope.
 
 Inductive reduction : nat -> termT -> termT -> Prop :=
   | red_refl_zero : forall e : termT, reduction O e e
@@ -77,17 +74,32 @@ Inductive reduction : nat -> termT -> termT -> Prop :=
     (e ->1 f) -> reduction n f g -> 
     reduction (S n) e g.
 
-Notation "e ->( n ) f" := (reduction n e f) (at level 80) : system_t_term_scope.
+Notation "e ->( n ) f" := (reduction n e f) (at level 70) : system_t_term_scope.
 
 Definition reduction_star (e f : termT) : Prop :=
     exists n : nat, e ->(n) f.
 
-Notation "e ->* f" := (reduction_star e f) (at level 80) : system_t_term_scope.
+Notation "e ->* f" := (reduction_star e f) (at level 70) : system_t_term_scope.
 
-Definition reductible (e : termT) : Prop :=
+Inductive equivalence : termT -> termT -> Prop :=
+  | red_eq_red : forall e f : termT,
+    e ->* f -> equivalence e f
+  | red_eq_symm : forall e f : termT,
+    equivalence e f -> equivalence f e
+  | red_eq_trans : forall e f g : termT,
+    equivalence e f ->
+    equivalence f g ->
+    equivalence e g.
+
+Notation "e === f" := (equivalence e f) (at level 70) : system_t_term_scope.
+
+Definition reducible (e : termT) : Prop :=
     exists f : termT, e ->1 f.
 
-Fixpoint reductibleb (e : termT) : bool :=
+Definition normal_form (e : termT) : Prop :=
+    ~ reducible e.
+
+Fixpoint reducibleb (e : termT) : bool :=
   match e with
   | appT (absT _) _
   | iteT trueT _ _
@@ -95,10 +107,10 @@ Fixpoint reductibleb (e : termT) : bool :=
   | recT _ _ oT
   | recT _ _ (sT _) => true
   | absT e
-  | sT e => reductibleb e
-  | appT e f => reductibleb e || reductibleb f
+  | sT e => reducibleb e
+  | appT e f => reducibleb e || reducibleb f
   | iteT e f g
-  | recT e f g => reductibleb e || reductibleb f || reductibleb g
+  | recT e f g => reducibleb e || reducibleb f || reducibleb g
   | _ => false
   end.
 
@@ -136,6 +148,6 @@ Fixpoint left_reduce (e : termT) : option termT :=
 
 Definition reduction_one (e f : termT) : Prop := f ->1 e.
 
-Notation "e 1<- f" := (reduction_one e f) (at level 80) : system_t_term_scope.
+Notation "e 1<- f" := (reduction_one e f) (at level 70) : system_t_term_scope.
 
 Definition strongly_normalizing (e : termT) : Prop := Acc reduction_one e.

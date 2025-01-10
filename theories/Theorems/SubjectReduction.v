@@ -19,9 +19,8 @@ Open Scope system_t_term_scope.
 *)
 Lemma derivation_par_tsubst
   {G : Context.t} {e : termT} {t : typeT} {s : TMap.t typeT} :
-    derivation G e t ->
-    derivation
-      (Context.context_par_tsubst s G) e (typeT_par_tsubst s t).
+    G |- e :T t ->
+    Context.context_par_tsubst s G |- e :T typeT_par_tsubst s t.
 Proof.
   intro D.
   induction D;
@@ -36,8 +35,6 @@ Proof.
     apply FMap.map_1.
     exact H.
 Qed.
-
-Axiom FILL_HOLES : forall p : Prop, p. (* TO BE REMOVED ASAP. *)
 
 Fixpoint insert {A : Type} (n : nat) (x : A) (l : list A) :
     option (list A) :=
@@ -246,10 +243,10 @@ Proof.
 Qed.
 
 Lemma binsert_bshift {G H : Context.t} {e : termT} {t u : typeT} :
-    derivation G e t ->
+    G |- e :T t ->
     forall n : nat,
     binsert n u G = Some H ->
-    derivation H (bshift n e) t.
+    H |- (bshift n e) :T t.
 Proof.
   intro He.
   move: H.
@@ -298,8 +295,8 @@ Proof.
 Qed.
 
 Lemma bpush_bshift {G : Context.t} {e : termT} {t u : typeT} :
-    derivation G e t ->
-    derivation (Context.bpush u G) (bshift O e) t.
+    G |- e :T t ->
+    (Context.bpush u G) |- (bshift O e) :T t.
 Proof.
   intro Hder.
   eapply binsert_bshift.
@@ -321,7 +318,8 @@ Proof.
 Qed.
 
 Lemma binsert_fMapsTo {n : nat} {G H : Context.t} {t u : typeT} {x : fident} :
-    binsert n t G = Some H -> Context.fMapsTo x u G <-> Context.fMapsTo x u H.
+    binsert n t G = Some H ->
+    Context.fMapsTo x u G <-> Context.fMapsTo x u H.
 Proof.
   intro Heq.
   unfold Context.fMapsTo.
@@ -332,9 +330,9 @@ Qed.
 Lemma derivation_bsubst
   {G H : Context.t} {n : nat} {e a : termT} {t u : typeT} :
     binsert n t G = Some H ->
-    derivation H e u ->
-    derivation G a t ->
-    derivation G (e[n <- a]) u.
+    H |- e :T u ->
+    G |- a :T t ->
+    G |- e[n <- a] :T u.
 Proof.
   move: G H n u a.
   induction e;
@@ -370,7 +368,7 @@ Proof.
 Qed.
 
 Lemma derivation_one_reduction {G : Context.t} {e f : termT} {t : typeT} :
-    one_reduction e f -> derivation G e t -> derivation G f t.
+    e ->1 f -> G |- e :T t -> G |- f :T t.
 Proof.
   intro Hred.
   move: G t.
@@ -387,7 +385,7 @@ Qed.
 
 Lemma derivation_reduction
   {G : Context.t} {e f : termT} {t : typeT} {n : nat} :
-    (e ->(n) f) -> derivation G e t -> derivation G f t.
+    (e ->(n) f) -> G |- e :T t -> G |- f :T t.
 Proof.
   intros Hred.
   induction Hred;
@@ -396,7 +394,7 @@ Qed.
 
 Lemma derivation_reduction_star
   {G : Context.t} {e f : termT} {t : typeT} :
-    (e ->* f) -> derivation G e t -> derivation G f t.
+    (e ->* f) -> G |- e :T t -> G |- f :T t.
 Proof.
   intro Hred.
   destruct Hred as [n Hn].

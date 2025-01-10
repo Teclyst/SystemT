@@ -35,4 +35,3 @@ Definition bpush (u : typeT) (G : t) := {|
 
 Definition Equal (G H : t) :=
   (bmap G) = (bmap H) /\ FMap.Equal (fmap G) (fmap H).
-

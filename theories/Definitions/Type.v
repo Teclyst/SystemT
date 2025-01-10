@@ -10,8 +10,6 @@ Module TMap := TIdent.Map.
 
 Module TIdentFacts := IdentFacts TIdent.
 
-Infix "=?t" := TIdentFacts.eqb (at level 70) : system_t_type_scope.
-
 Definition tident := TIdent.t.
 
 Inductive typeT :=
@@ -25,7 +23,7 @@ Notation "t ->T u" := (funT t u) (at level 80, right associativity) : system_t_t
 Fixpoint typeT_tsubst (x : tident) (a t : typeT) :=
   match t with
   | tvarT y =>
-    match x =?t y with
+    match TIdentFacts.eqb x y with
     | true => a
     | _ => tvarT y
     end

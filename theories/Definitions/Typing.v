@@ -50,5 +50,8 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
     derivation G g natT ->
     derivation G (recT e f g) t.
 
+Notation "G |- e :T t" := (derivation G e t) (at level 90) : system_t_type_scope.
+Notation "|- e :T t" := (derivation Context.empty e t) (at level 90) : system_t_type_scope.
+
 Close Scope system_t_type_scope.
 Close Scope system_t_term_scope.

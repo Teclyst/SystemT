@@ -75,6 +75,17 @@ Proof.
     exact (reduction_trans Hredm Hredn).
 Qed.
 
+#[export] Instance equivalence_equivalence :
+    RelationClasses.Equivalence equivalence.
+Proof.
+  constructor.
+  - intro e.
+    apply red_eq_red.
+    reflexivity.
+  - eauto using equivalence.
+  - eauto using equivalence.
+Qed.
+
 Lemma reduction_absT {e f : termT} {n : nat} :
     (e ->(n) f) -> (absT e ->(n) absT f).
 Proof.
@@ -321,8 +332,8 @@ Qed.
 Hint Resolve
   reduction_star_bsubst : reduction_star_lemmas.
 
-Lemma reductibleb_spec :
-    forall e : termT, Bool.reflect (reductible e) (reductibleb e).
+Lemma reducibleb_spec :
+    forall e : termT, Bool.reflect (reducible e) (reducibleb e).
 Proof.
   intro e.
   induction e.
@@ -397,16 +408,119 @@ Proof.
     intro H.
     destruct H as [g Hred].
     inversion Hred.
-  - inversion IHe1.
-  --- simpl.
-      rewrite <- H.
-      simpl.
+  - simpl.
+    inversion IHe1;
+    inversion IHe2;
+    inversion IHe3;
+    simpl;
+    try (
       destruct e1;
       left;
-      destruct H0 as [g Hred];
+      try destruct H0 as [f1 Hred1];
+      try destruct H2 as [f2 Hred2];
+      try destruct H4 as [f3 Hred3];
       eexists;
+      eauto using one_reduction
+    ).
+    destruct e1;
+    try (
+      right;
+      intro Habs;
+      destruct Habs as [g Hred];
+      inversion Hred;
+      try (
+        apply H0;
+        eexists;
+        eauto;
+        fail
+      );
+      try (
+        apply H2;
+        eexists;
+        eauto;
+        fail
+      );
+      try (
+        apply H4;
+        eexists;
+        eauto;
+        fail
+      )
+    );
+    left;
+    eexists;
+    eauto using one_reduction.
+  - simpl.
+    right.
+    intro Habs.
+    destruct Habs as [e Habs].
+    inversion Habs.
+  - simpl.
+    inversion IHe.
+  --- left.
+      destruct H0 as [f Hred].
+      eexists.
       eauto using one_reduction.
-Admitted.
+  --- right.
+      intro Habs.
+      destruct Habs as [f Habs].
+      inversion Habs.
+      apply H0.
+      eexists.
+      eauto using one_reduction.
+  - simpl.
+    inversion IHe1;
+    inversion IHe2;
+    inversion IHe3;
+    simpl;
+    try (
+      destruct e3;
+      left;
+      try destruct H0 as [f1 Hred1];
+      try destruct H2 as [f2 Hred2];
+      try destruct H4 as [f3 Hred3];
+      eexists;
+      eauto using one_reduction
+    ).
+    destruct e3;
+    try (
+      right;
+      intro Habs;
+      destruct Habs as [g Hred];
+      inversion Hred;
+      try (
+        apply H0;
+        eexists;
+        eauto;
+        fail
+      );
+      try (
+        apply H2;
+        eexists;
+        eauto;
+        fail
+      );
+      try (
+        apply H4;
+        eexists;
+        eauto;
+        fail
+      )
+    );
+    left;
+    eexists;
+    eauto using one_reduction.
+Qed.
+
+Lemma reducible_or_normal_form {e : termT} : {reducible e} + {normal_form e}.
+Proof.
+  destruct (reducibleb e) eqn:Heq;
+  move/ reducibleb_spec in Heq.
+  - left.
+    assumption.
+  - right.
+    assumption.
+Qed.
 
 Lemma left_reduce_spec {e f : termT} :
     left_reduce e = Some f -> (e ->1 f).
@@ -423,6 +537,6 @@ Proof.
     eauto using one_reduction.
 Admitted.
 
-Lemma left_reduce_reductible {e : termT} :
-    reductible e -> exists f : termT, left_reduce e = Some f.
+Lemma left_reduce_reducible {e : termT} :
+    reducible e -> exists f : termT, left_reduce e = Some f.
 Admitted.

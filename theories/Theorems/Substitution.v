@@ -55,7 +55,7 @@ Proof.
 Qed.
 
 Lemma bshift_bsubst_eq {e f : termT} {n : nat} :
-    (bshift n e) [n <- f] = e.
+    (bshift n e)[n <- f] = e.
 Proof.
   move: f n.
   induction e;

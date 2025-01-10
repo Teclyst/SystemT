@@ -406,7 +406,7 @@ Qed.
 Theorem confluence {e f g : termT} :
     (e ->* f) -> (e ->* g) ->
     exists h : termT,
-    (f ->* h) /\ (g ->* h).
+    f ->* h /\ g ->* h.
 Proof.
   intros Hred1 Hred2.
   destruct Hred1 as [m Hred1].
@@ -417,4 +417,31 @@ Proof.
   apply par_reduction_reduction_star in Hred3.
   apply par_reduction_reduction_star in Hred4.
   eauto using par_one_reduction_reduction_star.
+Qed.
+
+Lemma equivalence_reduction_star {e f : termT} :
+    e === f <-> exists g : termT, e ->* g /\ f ->* g.
+Proof.
+  constructor.
+  - intro Hequiv.
+    induction Hequiv.
+  --- exists f.
+      constructor;
+      auto;
+      reflexivity.
+  --- destruct IHHequiv as [g [He Hf]].
+      eauto.
+  --- destruct IHHequiv1 as [h [Heh Hfh]].
+      destruct IHHequiv2 as [i [Hfi Hgi]].
+      destruct (confluence (e := f) (f := h) (g := i)) as [j [Hhj Hgj]];
+      try assumption.
+      exists j.
+      constructor.
+  ----- transitivity h;
+        assumption.
+  ----- transitivity i;
+        assumption.
+  - intro Hred.
+    destruct Hred as [g [Hrede Hredf]].
+    eauto using equivalence. 
 Qed.

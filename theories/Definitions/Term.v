@@ -52,6 +52,18 @@ Inductive termT :=
   | sT : termT -> termT
   | recT : termT -> termT -> termT -> termT.
 
+Definition bool_as_boolT (b : bool) : termT :=
+  match b with
+  | true => trueT
+  | _ => falseT
+  end.
+
+Fixpoint nat_as_natT (n : nat) : termT :=
+  match n with
+  | O => oT
+  | S n => sT (nat_as_natT n)
+  end.
+
 (** ** Closedness : Definitions
 *)
 
@@ -197,7 +209,7 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   | _ => e
   end.
 
-Notation "e [ n <- f ]" := (bsubst n e f) (at level 50).
+Notation "e [ n <- f ]" := (bsubst n e f) (at level 50) : system_t_term_scope.
 
 Module FMap := FIdent.Map.
 
