@@ -5,6 +5,48 @@ Require Import ssreflect ssrfun ssrbool.
 
 Open Scope system_t_term_scope.
 
+Lemma bound_closed_nat_as_natT {n : nat} :
+    bound_closed (nat_as_natT n).
+Proof.
+  induction n;
+  unfold bound_closed;
+  simpl;
+  auto using bound_nclosed.
+Qed.
+
+Lemma bound_closed_bool_as_boolT {b : bool} :
+    bound_closed (bool_as_boolT b).
+Proof.
+  destruct b;
+  unfold bound_closed;
+  simpl;
+  auto using bound_nclosed.
+Qed.
+
+Lemma bound_nclosed_le {m n : nat} {e : termT} :
+    m <= n -> bound_nclosed m e -> bound_nclosed n e.
+Proof.
+  move=> Hle Hbndm.
+  move: Hle.
+  move: n.
+  induction Hbndm;
+  move=> o Hle;
+  auto using bound_nclosed.
+  - apply bvarT_closed.
+    lia.
+  - apply absT_closed.
+    apply IHHbndm.
+    lia.
+Qed.
+
+Lemma bound_closed_bound_nclosed {n : nat} {e : termT} :
+    bound_closed e -> bound_nclosed n e.
+Proof.
+  unfold bound_closed.
+  apply bound_nclosed_le.
+  lia.
+Qed.  
+
 Lemma bshift_bshift {e : termT} {m n : nat} :
     m <= n -> bshift m (bshift n e) = bshift (S n) (bshift m e).
 Proof.
@@ -359,3 +401,90 @@ Proof.
     try apply IHe;
     lia.
 Qed.
+
+Lemma bound_nclosed_bshift {e : termT} {m n : nat} :
+    m <= n -> bound_nclosed m e -> bshift n e = e.
+Proof.
+  move=> Hle Hbnd.
+  move: n Hle.
+  induction Hbnd;
+  simpl;
+  auto;
+  move=> m Hle;
+  try (
+    f_equal; 
+    auto
+  ).
+  - rewrite Compare_dec.leb_correct_conv.
+    lia.
+    reflexivity.
+  - rewrite IHHbnd.
+    lia.
+    reflexivity.
+Qed.
+
+Lemma bound_nclosed_bsubst {e f : termT} {m n : nat} :
+    m <= n -> bound_nclosed m e -> bsubst n e f = e.
+Proof.
+  move=> Hle Hbnd.
+  move: f n Hle.
+  induction Hbnd;
+  simpl;
+  auto;
+  move=> h m Hle;
+  try (
+    f_equal; 
+    auto
+  ).
+  - rewrite (PeanoNat.Nat.compare_gt_iff _ _).2.
+    lia.
+    reflexivity.
+  - apply IHHbnd.
+    lia. 
+Qed.
+
+Lemma bound_closed_bshift {e : termT} {n : nat} :
+    bound_closed e -> bshift n e = e.
+Proof.
+  apply bound_nclosed_bshift.
+  lia.
+Qed.
+
+Lemma bound_closed_bsubst {e f : termT} {n : nat} :
+    bound_closed e -> bsubst n e f = e.
+Proof.
+  apply bound_nclosed_bsubst.
+  lia.
+Qed.
+
+Definition FMap_union {elt elt' : Type} :=
+  FMap.map2 (fun (_ : option elt) (_ : option elt') => Some tt).
+
+Lemma FMap_unit_union_spec
+  {elt elt' : Type} {s : FMap.t elt} {t : FMap.t elt'} {x : fident} :
+    FMap.In x (FMap_union s t) <-> FMap.In x s \/ FMap.In x t.
+Proof.
+  constructor; unfold FMap_union.
+  - exact (@FMap.map2_2 _ _ _ _ _ _ _).
+  - intro Hor.
+    unfold FMap.In.
+    exists tt.
+    apply FMap.find_2.
+    apply FMap.map2_1.
+    assumption.
+Qed. 
+
+Fixpoint free_fvarT (e : termT) : FMap.t unit :=
+  match e with
+  | fvarT x => FMap.add x tt (FMap.empty unit)
+  | absT e
+  | sT e => free_fvarT e
+  | appT e f => FMap_union (free_fvarT e) (free_fvarT f)
+  | iteT e f g
+  | recT e f g =>
+    FMap_union
+      (free_fvarT e)
+      (FMap_union (free_fvarT f) (free_fvarT g))
+  | _ =>
+    (FMap.empty unit)
+  end.

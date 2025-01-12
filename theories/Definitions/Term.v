@@ -22,8 +22,6 @@ Declare Module FIdent : IDENT.
 
 Module FIdentFacts := IdentFacts FIdent.
 
-Infix "=?f" := FIdentFacts.eqb (at level 70) : system_t_term_scope.
-
 (** [idenT] is the label type for free variables.
 *)
 Definition fident := FIdent.t.
@@ -179,6 +177,11 @@ Fixpoint bshift (n : nat) (e : termT) :=
 (** [bsubst n e a] is [e], where all the occurrences of the
     variable bound by the lambda at height [n] above the root are
     replaced by [a].
+
+    Some modifications of de Bruijn indexes also occur: some
+    indexes are shifted up, as if the lambda at height [n] had
+    been eliminated, to behave correctly with regards to
+    beta-reduction.
 *)
 Fixpoint bsubst (n : nat) (e a : termT) :=
   match e with
@@ -209,8 +212,123 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   | _ => e
   end.
 
+Definition par_bsubst :=
+  (fix
+    par_bsubst_aux (n : nat) (s : list termT) (e : termT) :=
+      match e with
+      | bvarT m =>
+        match leb n m, (List.nth_error s (m - n)) with
+        | true, Some a => a
+        | _, _ => bvarT m
+        end
+      | absT e => absT (par_bsubst_aux (S n) (List.map (bshift O) s) e)
+      | appT e f =>
+        appT (par_bsubst_aux n s e) (par_bsubst_aux n s f)
+      | sT e => sT (par_bsubst_aux n s e)
+      | iteT e f g =>
+        iteT
+          (par_bsubst_aux n s e)
+          (par_bsubst_aux n s f)
+          (par_bsubst_aux n s g)
+        | recT e f g =>
+          recT
+            (par_bsubst_aux n s e)
+            (par_bsubst_aux n s f)
+            (par_bsubst_aux n s g)
+        | _ => e
+        end) O.
+
 Notation "e [ n <- f ]" := (bsubst n e f) (at level 50) : system_t_term_scope.
 
 Module FMap := FIdent.Map.
 
 Module FMapFacts := Coq.FSets.FMapFacts.WFacts FMap.
+
+(** [fsubst x e a] is [e], where all the occurrences of the
+    variable bound by the lambda at height [n] above the root are
+    replaced by [a].
+*)
+Fixpoint fsubst (x : fident) (e a : termT) :=
+  match e with
+  | fvarT y =>
+    match FIdentFacts.eqb x y with
+    | true => a
+    | _ => fvarT y
+    end
+  | absT e => absT (fsubst x e (bshift O a))
+  | appT e f =>
+    appT (fsubst x e a) (fsubst x f a)
+  | sT e => sT (fsubst x e a)
+  | iteT e f g =>
+    iteT
+      (fsubst x e a)
+      (fsubst x f a)
+      (fsubst x g a)
+  | recT e f g =>
+    recT
+      (fsubst x e a)
+      (fsubst x f a)
+      (fsubst x g a)
+  | _ => e
+  end.
+
+Fixpoint par_fsubst (s : FMap.t termT) (e : termT) :=
+  match e with
+  | fvarT x => 
+    match FMap.find x s with
+    | Some a => a
+    | _ => fvarT x
+    end
+  | absT e => absT (par_fsubst (FMap.map (bshift O) s) e)
+  | appT e f =>
+    appT (par_fsubst s e) (par_fsubst s f)
+  | sT e => sT (par_fsubst s e)
+  | iteT e f g =>
+    iteT
+      (par_fsubst s e)
+      (par_fsubst s f)
+      (par_fsubst s g)
+  | recT e f g =>
+    recT
+      (par_fsubst s e)
+      (par_fsubst s f)
+      (par_fsubst s g)
+  | _ => e
+  end.
+
+Definition par_subst :=
+  (fix par_subst_aux
+    (n : nat) (bs : list termT) (fs : FMap.t termT) (e : termT) :=
+      match e with
+      | bvarT m =>
+        match leb n m, (List.nth_error bs (m - n)) with
+        | true, Some a => a
+        | _, _ => bvarT m
+        end
+      | fvarT x => 
+        match FMap.find x fs with
+        | Some a => a
+        | _ => fvarT x
+        end
+      | absT e =>
+        absT
+          (par_subst_aux
+            (S n)
+            (List.map (bshift O) bs)
+            (FMap.map (bshift O) fs)
+            e)
+      | appT e f =>
+        appT (par_subst_aux n bs fs e) (par_subst_aux n bs fs f)
+      | sT e => sT (par_subst_aux n bs fs e)
+      | iteT e f g =>
+        iteT
+          (par_subst_aux n bs fs e)
+          (par_subst_aux n bs fs f)
+          (par_subst_aux n bs fs g)
+        | recT e f g =>
+          recT
+            (par_subst_aux n bs fs e)
+            (par_subst_aux n bs fs f)
+            (par_subst_aux n bs fs g)
+        | _ => e
+        end) O. 

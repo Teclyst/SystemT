@@ -8,6 +8,7 @@ Require Import Definitions.Type.
 Require Import Definitions.Typing.
 Require Import Definitions.Reduction.
 Require Import Theorems.Reduction.
+Require Import Theorems.NormalForm.
 
 Require Import ssreflect ssrfun ssrbool.
 
@@ -39,6 +40,13 @@ Definition andT : termT :=
 
 Definition orT : termT :=
   absT (absT (iteT (bvarT O) trueT (bvarT 1))).
+
+Definition addT : termT :=
+  absT (absT
+    (recT
+      (bvarT O)
+      (absT (absT (sT (bvarT (S O)))))
+      (bvarT (S O)))).
 
 Lemma type_idT {t : typeT} :
     |- idT :T t ->T t.
@@ -100,6 +108,29 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma type_addT :
+    |- addT :T natT ->T natT ->T natT.
+Proof.
+  apply absT_in.
+  apply absT_in.
+  unfold Context.empty;
+  unfold Context.bpush;
+  simpl.
+  apply recT_el; [ 
+    |
+    apply absT_in;
+    apply absT_in;
+    unfold Context.empty;
+    unfold Context.bpush;
+    simpl;
+    apply sT_el |
+  ];
+  apply bvarT_ax;
+  unfold Context.bMapsTo;
+  simpl;
+  reflexivity.
+Qed.
+
 Lemma idT_one_reduction {e : termT} : appT idT e ->1 e.
 Proof.
   eauto using one_reduction.
@@ -136,4 +167,80 @@ Proof.
   destruct b;
   destruct c;
   eauto using one_reduction, reduction.
+Qed.
+
+Lemma bound_closed_nat_as_natT {n : nat} :
+    bound_closed (nat_as_natT n).
+Proof.
+  induction n;
+  unfold bound_closed;
+  simpl;
+  auto using bound_nclosed.
+Qed.
+
+Lemma bound_closed_bool_as_boolT {b : bool} :
+    bound_closed (bool_as_boolT b).
+Proof.
+  destruct b;
+  unfold bound_closed;
+  simpl;
+  auto using bound_nclosed.
+Qed.
+
+Lemma addT_spec {m n : nat} :
+    appT (appT addT (nat_as_natT m)) (nat_as_natT n) ->*
+    nat_as_natT (m + n).
+Proof.
+  induction m;
+  simpl;
+  unfold addT.
+  - eapply red_star_next.
+  --- apply redind_appT_l.
+      apply redex_beta.
+  --- simpl.
+      eapply red_star_next.
+  ----- apply redex_beta.
+  ----- simpl.
+        eapply red_star_next.
+  ------- apply redex_recT_oT.
+  ------- reflexivity.
+  - eapply red_star_next.
+  --- apply redind_appT_l.
+      apply redex_beta.
+  --- simpl.
+      eapply red_star_next.
+  ----- apply redex_beta.
+  ----- simpl.
+        eapply red_star_next.
+  ------- apply redex_recT_sT.
+  ------- simpl.
+          rewrite Theorems.Substitution.bound_closed_bsubst;
+          rewrite Theorems.Substitution.bound_closed_bshift;
+          try (exact bound_closed_nat_as_natT).
+          eapply red_star_next.
+  --------- apply redind_appT_l.
+            apply redex_beta.
+  --------- simpl.
+            eapply red_star_next.
+  ----------- apply redex_beta.
+  ----------- simpl.
+              repeat rewrite Theorems.Substitution.bound_closed_bsubst;
+              repeat rewrite Theorems.Substitution.bound_closed_bshift;
+              try (exact bound_closed_nat_as_natT).
+              apply reduction_star_sT.
+              apply (normal_form_reduction_star_confluence
+                (e := appT (appT addT (nat_as_natT m)) (nat_as_natT n))).
+  ------------- exact normal_form_nat_as_natT.
+  ------------- eapply red_star_next.
+  --------------- apply redind_appT_l.
+                  apply redex_beta.
+  --------------- simpl.
+                  eapply red_star_next.
+  ----------------- apply redex_beta.
+  ----------------- simpl.
+                    rewrite Theorems.Substitution.bound_closed_bsubst;
+                    rewrite Theorems.Substitution.bound_closed_bshift;
+                    try (exact bound_closed_nat_as_natT).
+                    reflexivity.
+  ------------- assumption.
 Qed.

@@ -41,6 +41,17 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma normal_form_reduction_star_confluence {e f g : termT} :
+    normal_form g -> (e ->* f) -> (e ->* g) -> (f ->* g).
+Proof.
+  intros Hnf Hredef Hredeg.
+  destruct (confluence Hredef Hredeg) as [h [Hredfh Hredgh]].
+  apply normal_form_reduction_star in Hredgh.
+  - rewrite Hredgh.
+    assumption.
+  - assumption.  
+Qed.
+
 Lemma normal_form_fvarT {f : fident} :
     normal_form (fvarT f).
 Proof.

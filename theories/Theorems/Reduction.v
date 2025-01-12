@@ -75,6 +75,13 @@ Proof.
     exact (reduction_trans Hredm Hredn).
 Qed.
 
+Lemma red_star_next {e f g : termT} :
+    (e ->1 f) -> (f ->* g) -> (e ->* g).
+Proof.
+  transitivity f;
+  auto using one_reduction_reduction_star.
+Qed.
+
 #[export] Instance equivalence_equivalence :
     RelationClasses.Equivalence equivalence.
 Proof.
