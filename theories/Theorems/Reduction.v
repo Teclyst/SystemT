@@ -547,3 +547,7 @@ Admitted.
 Lemma left_reduce_reducible {e : termT} :
     reducible e -> exists f : termT, left_reduce e = Some f.
 Admitted.
+
+Lemma one_reduction_par_fsubst {e f : termT} {s : FMap.t termT} :
+    (e ->1 f) -> (par_fsubst s e ->1 par_fsubst s f).
+Admitted.

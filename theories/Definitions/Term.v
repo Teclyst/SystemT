@@ -212,31 +212,33 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   | _ => e
   end.
 
-Definition par_bsubst :=
-  (fix
-    par_bsubst_aux (n : nat) (s : list termT) (e : termT) :=
+Definition shifted_NatMap {A : Type} (s : NatMap.t A) :=
+  NatMap.fold (fun n => NatMap.add (S n)) s (NatMap.empty _).
+
+Fixpoint par_bsubst (s : NatMap.t termT) (e : termT) :=
       match e with
       | bvarT m =>
-        match leb n m, (List.nth_error s (m - n)) with
-        | true, Some a => a
-        | _, _ => bvarT m
+        match (NatMap.find m s) with
+        | Some a => a
+        | _ => bvarT m
         end
-      | absT e => absT (par_bsubst_aux (S n) (List.map (bshift O) s) e)
+      | absT e => absT (par_bsubst
+        (NatMap.map (bshift O) (shifted_NatMap s)) e)
       | appT e f =>
-        appT (par_bsubst_aux n s e) (par_bsubst_aux n s f)
-      | sT e => sT (par_bsubst_aux n s e)
+        appT (par_bsubst s e) (par_bsubst s f)
+      | sT e => sT (par_bsubst s e)
       | iteT e f g =>
         iteT
-          (par_bsubst_aux n s e)
-          (par_bsubst_aux n s f)
-          (par_bsubst_aux n s g)
+          (par_bsubst s e)
+          (par_bsubst s f)
+          (par_bsubst s g)
         | recT e f g =>
           recT
-            (par_bsubst_aux n s e)
-            (par_bsubst_aux n s f)
-            (par_bsubst_aux n s g)
+            (par_bsubst s e)
+            (par_bsubst s f)
+            (par_bsubst s g)
         | _ => e
-        end) O.
+      end.
 
 Notation "e [ n <- f ]" := (bsubst n e f) (at level 50) : system_t_term_scope.
 
@@ -295,40 +297,3 @@ Fixpoint par_fsubst (s : FMap.t termT) (e : termT) :=
       (par_fsubst s g)
   | _ => e
   end.
-
-Definition par_subst :=
-  (fix par_subst_aux
-    (n : nat) (bs : list termT) (fs : FMap.t termT) (e : termT) :=
-      match e with
-      | bvarT m =>
-        match leb n m, (List.nth_error bs (m - n)) with
-        | true, Some a => a
-        | _, _ => bvarT m
-        end
-      | fvarT x => 
-        match FMap.find x fs with
-        | Some a => a
-        | _ => fvarT x
-        end
-      | absT e =>
-        absT
-          (par_subst_aux
-            (S n)
-            (List.map (bshift O) bs)
-            (FMap.map (bshift O) fs)
-            e)
-      | appT e f =>
-        appT (par_subst_aux n bs fs e) (par_subst_aux n bs fs f)
-      | sT e => sT (par_subst_aux n bs fs e)
-      | iteT e f g =>
-        iteT
-          (par_subst_aux n bs fs e)
-          (par_subst_aux n bs fs f)
-          (par_subst_aux n bs fs g)
-        | recT e f g =>
-          recT
-            (par_subst_aux n bs fs e)
-            (par_subst_aux n bs fs f)
-            (par_subst_aux n bs fs g)
-        | _ => e
-        end) O. 

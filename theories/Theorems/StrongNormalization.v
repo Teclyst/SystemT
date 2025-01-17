@@ -42,6 +42,30 @@ Proof.
   assumption.
 Qed.
 
+Lemma strongly_normalizing_absT_inv {e : termT} :
+    strongly_normalizing (absT e) ->
+    strongly_normalizing e.
+Proof.
+  generalize (eq_refl (absT e)).
+  pattern (absT e) at -1.
+  generalize (absT e) at -2.
+  simpl.
+  move=> f Heq Hsn.
+  rewrite <- Heq in Hsn.
+  move: Heq.
+  move: e.
+  induction Hsn;
+  move=> e Heq.
+  constructor.
+  move=> h Hred.
+  eapply (H0 (absT h)).
+  - rewrite Heq.
+    unfold "1<-" in Hred.
+    unfold "1<-".
+    eauto using one_reduction.
+  - reflexivity.
+Qed.
+
 Lemma strongly_normalizing_appT_inv_l {e f : termT} :
     strongly_normalizing (appT e f) ->
     strongly_normalizing e.
@@ -114,11 +138,60 @@ Proof.
   - reflexivity.
 Qed.
 
+Lemma strongly_normalizing_par_fsubst_inv {e : termT} {s : FMap.t termT} :
+    strongly_normalizing (par_fsubst s e) ->
+    strongly_normalizing e.
+Proof.
+  generalize (eq_refl (par_fsubst s e)).
+  pattern (par_fsubst s e) at -1.
+  generalize (par_fsubst s e) at -2.
+  simpl.
+  move=> g Heq Hsn.
+  rewrite <- Heq in Hsn.
+  move: Heq.
+  move: e.
+  induction Hsn;
+  move=> e Heq.
+  constructor.
+  move=> h Hred.
+  eapply (H0 (par_fsubst s h)).
+  - rewrite Heq.
+    unfold "1<-" in Hred.
+    unfold "1<-".
+    eauto using one_reduction_par_fsubst.
+  - reflexivity. 
+Qed.
+
+Lemma strongly_normalizing_one_reduction {e f : termT} :
+    (e ->1 f) -> strongly_normalizing e ->
+    strongly_normalizing f.
+Proof.
+  move=> Hred Hsn.
+  destruct Hsn.
+  apply H.
+  assumption.
+Qed.
+
+Lemma strongly_normalizing_reduction {n : nat} {e f : termT} :
+    (e ->(n) f) -> strongly_normalizing e ->
+    strongly_normalizing f.
+Proof.
+  move=> Hred.
+  induction Hred;
+  auto.
+  move=> Hsn.
+  apply IHHred.
+  apply (strongly_normalizing_one_reduction (e := e));
+  assumption.
+Qed.
+
 Lemma strongly_normalizing_reduction_star {e f : termT} :
     (e ->* f) -> strongly_normalizing e ->
     strongly_normalizing f.
 Proof.
-  Admitted.
+  move=> [n Hred].
+  exact (strongly_normalizing_reduction Hred).
+Qed.
 
 Lemma strongly_normalizing_redex_beta_inv {e f : termT} :
     strongly_normalizing (e[O <- f]) ->
@@ -309,4 +382,177 @@ Lemma reducibility_candidate_strongly_normalizing {t : typeT} {e : termT} :
 Proof.
   move: e.
   exact reducibility_candidate_strongly_normalizing_aux.2.
+Qed.
+
+Lemma reducibility_candidate_par_bsubst_derivation
+  {t : typeT} {e : termT} {G : Context.t} {s : NatMap.t termT} :
+  FMap.Empty (Context.fmap G) ->
+  (forall (n : nat) (t : typeT), Context.bMapsTo n t G ->
+    exists e : termT,
+      NatMap.MapsTo n e s /\ reducibility_candidate t e) ->
+  G |- e :T t -> reducibility_candidate t (par_bsubst s e).
+Admitted.
+
+Lemma reducibility_candidate_empty_derivation {t : typeT} {e : termT} :
+  |- e :T t -> reducibility_candidate t e.
+Proof.
+  move=> Hderiv.
+  rewrite <- (par_bsubst_empty (s := NatMap.empty termT)).
+  - apply (reducibility_candidate_par_bsubst_derivation (G := Context.empty)).
+  --- apply (FMap.empty_1).
+  --- move=> n u Hmap.
+      unfold Context.bMapsTo in Hmap.
+      simpl in Hmap.
+      destruct n;
+      simpl in Hmap;
+      discriminate Hmap.
+  --- exact Hderiv.
+  - exact (@NatMap.empty_1 termT).
+Qed.  
+
+Fixpoint iter_absT (n : nat) (e : termT) :=
+  match n with
+  | O => e
+  | S n => absT (iter_absT n e)
+  end.
+
+Lemma iter_absT_absT {n : nat} (e : termT) :
+    iter_absT n (absT e) = absT (iter_absT n e).
+Proof.
+  induction n;
+  simpl;
+  try rewrite IHn;
+  reflexivity.
+Qed.
+
+Lemma strongly_normalizing_iter_absT_inv {n : nat} {e : termT} :
+    strongly_normalizing (iter_absT n e) -> strongly_normalizing e.
+Proof.
+  move: e.
+  induction n;
+  auto;
+  simpl.
+  move=> e Hsn.
+  apply IHn.
+  apply strongly_normalizing_absT_inv.
+  assumption.
+Qed.
+
+Lemma derivation_iter_absT {n : nat} {e : termT} {t : typeT} {G : Context.t} :
+    n = length (Context.bmap G) ->
+    G |- e :T t -> exists u : typeT,
+    {| Context.bmap := nil; Context.fmap := Context.fmap G |} |-
+      iter_absT n e :T u.
+Proof.
+  move: e t G.
+  induction n;
+  move=> e t G Hlen Hderiv;
+  destruct G;
+  simpl in Hlen;
+  simpl.
+  - apply eq_sym in Hlen.
+    rewrite List.length_zero_iff_nil in Hlen.
+    rewrite Hlen in Hderiv.
+    eauto.
+  - destruct bmap.
+  --- discriminate Hlen.
+  --- rewrite <- iter_absT_absT.
+      have Hderiv2 := IHn (absT e) (t0 ->T t)
+        {| Context.bmap := bmap; Context.fmap := fmap |}.
+      simpl in Hderiv2.
+      apply Hderiv2.
+  ----- simpl in Hlen.
+        inversion Hlen.
+        reflexivity.
+  ----- eauto using derivation.
+Qed.
+
+Lemma fclosed_derivation_strongly_normalizing
+  {e : termT} {t : typeT} {G : Context.t} :
+  Context.fmap G = FMap.empty typeT -> G |- e :T t ->
+  strongly_normalizing e.
+Proof.
+  move=> Hem Hderiv.
+  apply (strongly_normalizing_iter_absT_inv (n := length (Context.bmap G))).
+  destruct (derivation_iter_absT
+    (n := length (Context.bmap G))
+    (e := e)
+    (t := t)
+    (G := G));
+  auto.
+  rewrite Hem in H.
+  fold Context.empty in H.
+  apply (reducibility_candidate_strongly_normalizing (t := x)).
+  apply reducibility_candidate_empty_derivation.
+  apply H.
+Qed.
+
+Definition index :=
+  (fix index_aux (n : nat) (l : list fident) (x : fident) :=
+    match l with
+    | nil => O
+    | cons y l =>
+      match FIdentFacts.eqb x y with
+      | true => n
+      | false => index_aux (S n) l x
+      end
+    end) O.
+
+Lemma eliminate_fvarT_derivation
+  {e : termT} {t : typeT} {G : Context.t} :
+    G |- e :T t ->
+    exists (s : FMap.t termT) (l : list typeT), {|
+      Context.bmap := (Context.bmap G) ++ l;
+      Context.fmap := FMap.empty typeT
+    |} |- par_fsubst s e :T t.
+Proof.
+  simpl.
+  move=> Hderiv.
+  pose elements := FMap.elements (Context.fmap G).
+  exists
+    (FMap.mapi
+      (fun x _ =>
+        bvarT
+          (index
+            (List.map
+              (fun c : fident * typeT =>
+                let (x, _) := c in x)
+              elements)
+            x +
+            length (Context.bmap G)))
+        (Context.fmap G)).
+  exists
+    (List.map
+      (fun c : fident * typeT =>
+        let (_, x) := c in x)
+      elements).
+  induction Hderiv;
+  simpl;
+  eauto using derivation.
+  - apply bvarT_ax.
+    unfold Context.bMapsTo.
+    simpl.
+    rewrite List.nth_error_app1.
+    unfold Context.bMapsTo in H.
+  --- apply (List.nth_error_Some _ _).1.
+      move=> Heq.
+      rewrite Heq in H.
+      discriminate H.
+  --- assumption.
+Admitted.
+
+Theorem derivation_strongly_normalizing
+  {e : termT} {t : typeT} {G : Context.t} :
+    G |- e :T t -> strongly_normalizing e.
+Proof.
+  move=> Hderiv.
+  destruct (eliminate_fvarT_derivation Hderiv) as [s [l Hderiv2]].
+  apply (strongly_normalizing_par_fsubst_inv (s := s)).
+  apply (fclosed_derivation_strongly_normalizing
+    (G := {|
+      Context.bmap := Context.bmap G ++ l;
+      Context.fmap := FMap.empty typeT
+    |})
+    (t := t));
+  auto.
 Qed.
