@@ -10,6 +10,7 @@ Require Import Definitions.Reduction.
 Require Import Theorems.Substitution.
 Require Import Theorems.Reduction.
 Require Import Theorems.NormalForm.
+Require Import Morphisms.
 
 Require Import ssreflect ssrfun ssrbool.
 
@@ -386,15 +387,15 @@ Qed.
 
 Lemma reducibility_candidate_par_bsubst_derivation
   {t : typeT} {e : termT} {G : Context.t} {s : NatMap.t termT} :
-  FMap.Empty (Context.fmap G) ->
-  (forall (n : nat) (t : typeT), Context.bMapsTo n t G ->
-    exists e : termT,
+    FMap.Empty (Context.fmap G) ->
+    (forall (n : nat) (t : typeT), Context.bMapsTo n t G ->
+      exists e : termT,
       NatMap.MapsTo n e s /\ reducibility_candidate t e) ->
-  G |- e :T t -> reducibility_candidate t (par_bsubst s e).
+    G |- e :T t -> reducibility_candidate t (par_bsubst s e).
 Admitted.
 
 Lemma reducibility_candidate_empty_derivation {t : typeT} {e : termT} :
-  |- e :T t -> reducibility_candidate t e.
+    |- e :T t -> reducibility_candidate t e.
 Proof.
   move=> Hderiv.
   rewrite <- (par_bsubst_empty (s := NatMap.empty termT)).
@@ -487,16 +488,36 @@ Proof.
   apply H.
 Qed.
 
-Definition index :=
-  (fix index_aux (n : nat) (l : list fident) (x : fident) :=
+Fixpoint index (l : list fident) (x : fident) :=
     match l with
     | nil => O
     | cons y l =>
       match FIdentFacts.eqb x y with
-      | true => n
-      | false => index_aux (S n) l x
+      | true => O
+      | false => S (index l x)
       end
-    end) O.
+    end.
+
+#[export] Instance Proper_index : Morphisms.Proper (SetoidList.eqlistA FIdentFacts.eq ==> FIdentFacts.eq ==> eq) index.
+Proof.
+  move=> l m Heq1 x y Heq2.
+  induction Heq1.
+  - reflexivity.
+  - simpl.
+    destruct (FIdentFacts.eqb x x0) eqn:Heq3;
+    move/ FIdentFacts.eqb_spec in Heq3;
+    rewrite Heq2 in Heq3;
+    rewrite H in Heq3;
+    move/ FIdentFacts.eqb_spec in Heq3.
+  --- rewrite Heq3.
+      reflexivity.
+  --- unfold "~~" in Heq3.
+      inversion Heq3.
+      destruct (FIdentFacts.eqb y x') eqn:Heq4;
+      try discriminate H1.
+      f_equal.
+      exact IHHeq1.
+Qed.
 
 Lemma eliminate_fvarT_derivation
   {e : termT} {t : typeT} {G : Context.t} :
@@ -539,7 +560,114 @@ Proof.
       rewrite Heq in H.
       discriminate H.
   --- assumption.
-Admitted.
+  - rewrite FMapFacts.mapi_o.
+  --- move=> y z _ Heq.
+      rewrite Heq.
+      reflexivity.
+  --- unfold Context.fMapsTo in H.
+      rewrite FMapFacts.find_mapsto_iff in H.
+      rewrite H.
+      simpl.
+      apply bvarT_ax.
+      unfold Context.bMapsTo.
+      simpl.
+      rewrite List.nth_error_app2.
+      Lia.lia.
+      rewrite Nat.add_sub.
+      apply FMap.find_2 in H.
+      apply FMap.elements_1 in H.
+      have bar := (FMap.elements_3w (Context.fmap G)).
+      induction H.
+  ----- destruct y as [y u].
+        unfold elements.
+        simpl.
+        unfold FMap.eq_key_elt in H.
+        simpl in H.
+        destruct H as [Heq1 Heq2].
+        move/ FIdentFacts.eqb_spec in Heq1.
+        rewrite Heq1.
+        simpl.
+        rewrite Heq2.
+        reflexivity.
+  ----- inversion bar.
+        destruct y as [y u].
+        simpl.
+        destruct (FIdentFacts.eqb x y) eqn:Heq2.
+  ------- move/ FIdentFacts.eqb_spec in Heq2.
+          destruct H2.
+          eapply (SetoidList.InA_eqA _ (x := (x, t))).
+          Unshelve.
+  --------- unfold FMap.eq_key.
+              simpl.
+              exact Heq2.
+  --------- clear IHInA bar H3 H1.
+            induction H.
+  ----------- destruct y0 as [z v].
+              unfold FMap.eq_key_elt in H.
+              destruct H as [Heq3 _].
+              apply SetoidList.InA_cons_hd.
+              unfold FMap.eq_key.
+              assumption.
+  ----------- apply SetoidList.InA_cons_tl.
+              assumption.
+  --------- constructor.
+  ----------- move=> [z v].
+              unfold FMap.eq_key.
+              reflexivity.
+  ----------- move=> [z v] [z' v'].
+              unfold FMap.eq_key.
+              simpl.
+              move=> Heq5.
+              rewrite Heq5.
+              reflexivity.
+  ----------- move=> [z v] [z' v'] [z'' v''].
+              unfold FMap.eq_key.
+              simpl.
+              move=> Heq5 Heq6.
+              transitivity z';
+              eauto.
+  ------- simpl.
+          apply IHInA.
+          assumption.
+  - apply absT_in.
+    unfold Context.bpush.
+    simpl.
+    unfold Context.bpush in IHHderiv.
+    simpl in IHHderiv.
+    have foo : FMap.Equal
+      (FMap.mapi
+        (fun x : FIdent.t =>
+          fun=> bvarT
+            (index
+              (List.map (fun c : fident * typeT =>
+                let (x0, _) := c in x0)
+                elements) x +
+                S (length (Context.bmap G)))) (Context.fmap G))
+      (FMap.map (bshift 0)
+        (FMap.mapi
+          (fun x : FIdent.t =>
+            fun=> bvarT
+              (index
+                (List.map (fun c : fident * typeT =>
+                  let (x0, _) := c in x0)
+                  elements) x +
+                  length (Context.bmap G))) (Context.fmap G))).
+  --- move=> z.
+      rewrite FMapFacts.map_o.
+      repeat rewrite FMapFacts.mapi_o;
+      try (
+        move=> x y _ Heq;
+        rewrite Heq;
+        reflexivity
+      ).
+      destruct (FMap.find z (Context.fmap G));
+      simpl;
+      try reflexivity.
+      repeat f_equal.
+      Lia.lia.
+  --- rewrite <- foo.
+      assumption.
+Qed. 
 
 Theorem derivation_strongly_normalizing
   {e : termT} {t : typeT} {G : Context.t} :

@@ -519,7 +519,7 @@ Proof.
     auto.
 Qed.
 
-Lemma Proper_shifted {A : Type} : Morphisms.Proper (eq ==> eq ==> @NatMap.Equal A ==> @NatMap.Equal A)
+#[export] Instance Proper_shifted {A : Type} : Morphisms.Proper (eq ==> eq ==> @NatMap.Equal A ==> @NatMap.Equal A)
   (fun n => NatMap.add (S n)).
 Proof.
   move=> m n Heq1 e f Heq2 s t Heq3 o.
@@ -545,7 +545,6 @@ Proof.
   - move=> s t Hind m b Hnin Hadd Hmap.
     unfold shifted_NatMap.
     rewrite (NatMapFacts.fold_Add (eqA := NatMap.Equal) _ _ _ _ (m1 := s) _ (k := m) (e := b)).
-  --- exact Proper_shifted.
   --- exact Tra_shifted.
   --- assumption.
   --- assumption.
@@ -590,7 +589,6 @@ Proof.
   - move=> s t Hind m b Hnin Hadd Hmap.
     unfold shifted_NatMap in Hmap.
     rewrite (NatMapFacts.fold_Add (eqA := NatMap.Equal) _ _ _ _ (m1 := s) _ (k := m) (e := b)) in Hmap.
-  --- exact Proper_shifted.
   --- exact Tra_shifted.
   --- assumption.
   --- assumption.
@@ -673,15 +671,105 @@ Inductive bvarT_no_occur : nat -> termT -> Prop :=
     bvarT_no_occur n e -> bvarT_no_occur n f -> bvarT_no_occur n g ->
     bvarT_no_occur n (recT e f g).
 
-Lemma par_fsubst_subst {e f : termT} {m : nat} {s : FMap.t termT} :
+#[export] Instance Proper_par_bsusbst : Morphisms.Proper (@FMap.Equal termT ==> eq ==> eq)
+  par_fsubst.
+Proof.
+  move=> s t Heq1 e f Heq2.
+  rewrite <- Heq2.
+  clear Heq2 f.
+  move: s t Heq1.
+  induction e;
+  move=> s t Heq;
+  simpl;
+  try f_equal;
+  eauto.
+  - rewrite Heq.
+    reflexivity.
+  - apply IHe.
+    move=> x.
+    repeat rewrite FMapFacts.map_o.
+    rewrite Heq.
+    reflexivity.  
+Qed.
+
+Lemma FMap_map_compose
+  {A B C : Type} {f : A -> B} {g : B -> C} {s : FMap.t A} :
+  FMap.Equal (FMap.map g (FMap.map f s)) (FMap.map (fun a => g (f a)) s).
+Proof.
+  move=> a.
+  repeat rewrite FMapFacts.map_o.
+  destruct (FMap.find a s);
+  reflexivity.
+Qed.
+
+Lemma FMap_map_bshift_bshift
+  {m n : nat} {s : FMap.t termT} :
+    m <= n ->
+      FMap.Equal
+        (FMap.map (bshift m) (FMap.map (bshift n) s))
+        (FMap.map (bshift (S n)) (FMap.map (bshift m) s)).
+Proof.
+  repeat rewrite FMap_map_compose.
+  move=> Hle a.
+  repeat rewrite FMapFacts.map_o.
+  destruct (FMap.find a s);
+  simpl.
+  - rewrite bshift_bshift.
+    assumption.
+    reflexivity. 
+  - reflexivity.
+Qed.
+
+Lemma par_fsubst_bshift {e : termT} {m : nat} {s : FMap.t termT} :
+  bshift m (par_fsubst s e) = par_fsubst (FMap.map (bshift m) s) (bshift m e).
+Proof.
+  move: m s.
+  induction e;
+  move=> m s;
+  simpl;
+  try f_equal;
+  eauto.
+  - rewrite FMapFacts.map_o.
+    destruct (FMap.find f s);
+    reflexivity.
+  - destruct (PeanoNat.Nat.leb m n);
+    reflexivity.
+  - rewrite FMap_map_bshift_bshift.
+    lia.
+    exact (IHe _ _).
+Qed.
+
+Lemma par_fsubst_bsubst {e f : termT} {m : nat} {s : FMap.t termT} :
   (par_fsubst (FMap.map (bshift m) s) e) [m <- par_fsubst s f] = (par_fsubst s (e [m <- f])).
 Proof.
-  move: f m.
+  move: f m s.
   induction e;
-  simpl.
-  - move=> g m.
-    destruct (FMap.find f s) eqn:Heq.
-Admitted.
+  simpl;
+  move=> g m s;
+  try (
+    f_equal;
+    auto;
+    fail
+  ).
+  - destruct (FMap.find f s) eqn:Heq.
+  --- rewrite (FMap.find_1 (FMap.map_1 (bshift m) (FMap.find_2 Heq))).
+      exact bshift_bsubst_eq.
+  --- have foo : FMap.find f (FMap.map (bshift m) s) = None.
+      rewrite FMapFacts.map_o.
+      rewrite Heq.
+      reflexivity.
+      rewrite foo.
+      reflexivity.
+  - destruct (PeanoNat.Nat.compare m n);
+    destruct n;
+    reflexivity.
+  - f_equal.
+    simpl.
+    rewrite FMap_map_bshift_bshift.
+    lia.
+    rewrite par_fsubst_bshift.
+    exact (IHe _ _ _).
+Qed.
 
 Lemma shifted_NatMap_empty {s : NatMap.t termT} :
   NatMap.Empty s -> NatMap.Empty (shifted_NatMap s).

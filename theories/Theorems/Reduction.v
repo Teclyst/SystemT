@@ -550,4 +550,13 @@ Admitted.
 
 Lemma one_reduction_par_fsubst {e f : termT} {s : FMap.t termT} :
     (e ->1 f) -> (par_fsubst s e ->1 par_fsubst s f).
-Admitted.
+Proof.
+  move=> Hred.
+  move: s.
+  induction Hred;
+  simpl;
+  eauto using one_reduction.
+  move=> s.
+  rewrite <- par_fsubst_bsubst.
+  exact (redex_beta _ _).
+Qed.

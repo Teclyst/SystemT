@@ -9,6 +9,7 @@ Require Import Definitions.Typing.
 Require Import Definitions.Reduction.
 Require Import Theorems.Reduction.
 Require Import Theorems.NormalForm.
+Require Import Theorems.StrongNormalization.
 
 Require Import ssreflect ssrfun ssrbool.
 
@@ -243,4 +244,26 @@ Proof.
                     try (exact bound_closed_nat_as_natT).
                     reflexivity.
   ------------- assumption.
+Qed.
+
+Lemma bool_as_boolT_surj {e : termT} :
+    |- e :T boolT -> exists b : bool, e ->* bool_as_boolT b.
+Proof.
+  move=> Hderiv.
+  have Hredbool : reducibility_candidate boolT e.
+  - apply reducibility_candidate_empty_derivation.
+    assumption.
+  - inversion Hredbool.
+    assumption.
+Qed.
+
+Lemma nat_as_natT_surj {e : termT} :
+    |- e :T natT -> exists n : nat, e ->* nat_as_natT n.
+Proof.
+  move=> Hderiv.
+  have Hrednat : reducibility_candidate natT e.
+  - apply reducibility_candidate_empty_derivation.
+    assumption.
+  - inversion Hrednat.
+    assumption.
 Qed.
