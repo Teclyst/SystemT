@@ -622,6 +622,27 @@ Proof.
   ------- lia.
 Qed.
 
+Lemma shifted_NatMap_spec1_alt {A : Type} {s : NatMap.t A} {n : nat} :
+  NatMap.find n s = NatMap.find (S n) (shifted_NatMap s).
+Proof.
+  destruct (NatMap.find n s) eqn:Heq.
+  - apply NatMap.find_2 in Heq.
+    apply shifted_NatMap_spec1 in Heq.
+    apply NatMap.find_1 in Heq.
+    rewrite Heq.
+    reflexivity.
+  - destruct (NatMap.find (elt:=A) (S n) (shifted_NatMap s)) eqn:Heq2.
+  --- apply NatMap.find_2 in Heq2.
+      apply shifted_NatMap_spec2 in Heq2.
+      destruct Heq2 as [m [Heq2 Hmap]].
+      inversion Heq2.
+      rewrite H0 in Heq.
+      apply NatMap.find_1 in Hmap.
+      rewrite Hmap in Heq.
+      discriminate Heq.
+  --- reflexivity.
+Qed.
+
 Lemma shifted_NatMap_spec_iff {A : Type} {s : NatMap.t A} {n : nat} {a : A} :
   NatMap.MapsTo n a (shifted_NatMap s) <->
   exists m : nat, n = S m /\ NatMap.MapsTo m a s.
@@ -634,11 +655,15 @@ Proof.
     assumption. 
 Qed.
 
-Lemma par_bsubst_bsubst {e f : termT} {m : nat} {s : NatMap.t termT} :
-  (forall n : nat, NatMap.In n s -> m <= n) -> (par_bsubst s e) [m <- par_bsubst s f] =
-    (par_bsubst s (e [m <- f])).
+Lemma shifted_NatMap_O {A : Type} {s : NatMap.t A} :
+  ~ NatMap.In O (shifted_NatMap s).
 Proof.
-  Admitted.
+  move=> [e Hmap].
+  have foo := shifted_NatMap_spec2.
+  unfold NatMap.MapsTo in foo.
+  destruct (foo _ _ _ _ Hmap) as [m [Heq _]].
+  discriminate Heq.
+Qed.
 
 Inductive bvarT_no_occur : nat -> termT -> Prop :=
   | bvarT_no_occur_fvarT :
@@ -771,14 +796,26 @@ Proof.
     exact (IHe _ _ _).
 Qed.
 
-Lemma shifted_NatMap_empty {s : NatMap.t termT} :
+Lemma shifted_NatMap_empty {A : Type} {s : NatMap.t A} :
   NatMap.Empty s -> NatMap.Empty (shifted_NatMap s).
 Proof.
   move=> Hem.
   unfold shifted_NatMap.
   rewrite NatMapFacts.fold_Empty.
   - assumption.
-  - exact (@NatMap.empty_1 termT).
+  - exact (@NatMap.empty_1 A).
+Qed.
+
+Lemma shifted_NatMap_map {A B : Type} {s : NatMap.t A} {f : A -> B} :
+  NatMap.Equal (NatMap.map f (shifted_NatMap s)) (shifted_NatMap (NatMap.map f s)).
+Proof.
+  move=> [ | n];
+  rewrite NatMapFacts.map_o.
+  - repeat rewrite (NatMapFacts.not_find_in_iff _ _).1;
+    auto using shifted_NatMap_O.
+  - repeat rewrite <- shifted_NatMap_spec1_alt.
+    rewrite NatMapFacts.map_o.
+    reflexivity.
 Qed.
 
 Lemma map_empty {A B : Type} {s : NatMap.t A} {f : A -> B} :
@@ -813,3 +850,9 @@ Proof.
     apply shifted_NatMap_empty.
     assumption.
 Qed.
+
+Lemma par_bsubst_bsubst {e f : termT} {m : nat} {s : NatMap.t termT} :
+  (forall n : nat, NatMap.In n s -> m <> n) ->
+    (par_bsubst (NatMap.map (bshift m) s) e) [m <- f] =
+    (par_bsubst (NatMap.add m f s) e).
+(* Not true! *) 

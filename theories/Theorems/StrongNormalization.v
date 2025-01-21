@@ -43,124 +43,86 @@ Proof.
   assumption.
 Qed.
 
+Lemma strongly_normalizing_f {e : termT} {r : termT -> termT} :
+    (forall e f : termT, (r e ->1 r f) -> (e ->1 f)) ->
+    (forall e f : termT, (r e ->1 f) -> exists g : termT, f = r g) ->
+    strongly_normalizing e ->
+    strongly_normalizing (r e).
+Proof.
+  move=> Himpl Hsur Hsn.
+  induction Hsn as [f Hacc Hred1].
+  constructor.
+  move=> g Hred2.
+  destruct (Hsur _ _ Hred2) as [h Heq].
+  rewrite Heq.
+  apply Hred1.
+  apply Himpl.
+  rewrite Heq in Hred2.
+  assumption. 
+Qed.
+
+Lemma strongly_normalizing_f_inv {e : termT} {r : termT -> termT} :
+    (forall e f : termT, (e ->1 f) -> (r e ->1 r f)) ->
+    strongly_normalizing (r e) ->
+    strongly_normalizing e.
+Proof.
+  generalize (eq_refl (r e)).
+  pattern (r e) at -1.
+  generalize (r e) at -2.
+  simpl.
+  move=> f Heq Himpl Hsn.
+  rewrite <- Heq in Hsn.
+  move: e Heq.
+  induction Hsn as [f Hacc Hred1].
+  move=> e Heq.
+  constructor.
+  move=> g Hred2.
+  eapply Hred1.
+  - unfold "1<-".
+    rewrite Heq.
+    apply Himpl.
+    exact Hred2.
+  - reflexivity.
+Qed.
+
 Lemma strongly_normalizing_absT_inv {e : termT} :
     strongly_normalizing (absT e) ->
     strongly_normalizing e.
 Proof.
-  generalize (eq_refl (absT e)).
-  pattern (absT e) at -1.
-  generalize (absT e) at -2.
-  simpl.
-  move=> f Heq Hsn.
-  rewrite <- Heq in Hsn.
-  move: Heq.
-  move: e.
-  induction Hsn;
-  move=> e Heq.
-  constructor.
-  move=> h Hred.
-  eapply (H0 (absT h)).
-  - rewrite Heq.
-    unfold "1<-" in Hred.
-    unfold "1<-".
-    eauto using one_reduction.
-  - reflexivity.
+  apply strongly_normalizing_f_inv.
+  eauto using one_reduction.
 Qed.
 
 Lemma strongly_normalizing_appT_inv_l {e f : termT} :
     strongly_normalizing (appT e f) ->
     strongly_normalizing e.
 Proof.
-  generalize (eq_refl (appT e f)).
-  pattern (appT e f) at -1.
-  generalize (appT e f) at -2.
-  simpl.
-  move=> g Heq Hsn.
-  rewrite <- Heq in Hsn.
-  move: Heq.
-  move: e f.
-  induction Hsn;
-  move=> e f Heq.
-  constructor.
-  move=> h Hred.
-  eapply (H0 (appT h f)).
-  - rewrite Heq.
-    unfold "1<-" in Hred.
-    unfold "1<-".
-    eauto using one_reduction.
-  - reflexivity.
+  apply (strongly_normalizing_f_inv (r := (fun e => appT e f))).
+  eauto using one_reduction.
 Qed.
 
 Lemma strongly_normalizing_appT_inv_r {e f : termT} :
     strongly_normalizing (appT e f) ->
     strongly_normalizing f.
 Proof.
-  generalize (eq_refl (appT e f)).
-  pattern (appT e f) at -1.
-  generalize (appT e f) at -2.
-  simpl.
-  move=> g Heq Hsn.
-  rewrite <- Heq in Hsn.
-  move: Heq.
-  move: e f.
-  induction Hsn;
-  move=> e f Heq.
-  constructor.
-  move=> h Hred.
-  eapply (H0 (appT e h)).
-  - rewrite Heq.
-    unfold "1<-" in Hred.
-    unfold "1<-".
-    eauto using one_reduction.
-  - reflexivity.
+  apply strongly_normalizing_f_inv.
+  eauto using one_reduction.
 Qed.
 
 Lemma strongly_normalizing_bsubst_inv {e f : termT} {n : nat} :
     strongly_normalizing (e[n <- f]) ->
     strongly_normalizing e.
 Proof.
-  generalize (eq_refl (e[n <- f])).
-  pattern (e[n <- f]) at -1.
-  generalize (e[n <- f]) at -2.
-  simpl.
-  move=> g Heq Hsn.
-  rewrite <- Heq in Hsn.
-  move: Heq.
-  move: e f.
-  induction Hsn;
-  move=> e f Heq.
-  constructor.
-  move=> h Hred.
-  eapply (H0 (h[n <- f])).
-  - rewrite Heq.
-    unfold "1<-" in Hred.
-    unfold "1<-".
-    eauto using one_reduction_bsubst_l.
-  - reflexivity.
+  apply (strongly_normalizing_f_inv (r := fun e => e [n <- f])).
+  eauto using one_reduction_bsubst_l.
 Qed.
 
 Lemma strongly_normalizing_par_fsubst_inv {e : termT} {s : FMap.t termT} :
     strongly_normalizing (par_fsubst s e) ->
     strongly_normalizing e.
 Proof.
-  generalize (eq_refl (par_fsubst s e)).
-  pattern (par_fsubst s e) at -1.
-  generalize (par_fsubst s e) at -2.
-  simpl.
-  move=> g Heq Hsn.
-  rewrite <- Heq in Hsn.
-  move: Heq.
-  move: e.
-  induction Hsn;
-  move=> e Heq.
-  constructor.
-  move=> h Hred.
-  eapply (H0 (par_fsubst s h)).
-  - rewrite Heq.
-    unfold "1<-" in Hred.
-    unfold "1<-".
-    eauto using one_reduction_par_fsubst.
-  - reflexivity. 
+  apply strongly_normalizing_f_inv.
+  eauto using one_reduction_par_fsubst.
 Qed.
 
 Lemma strongly_normalizing_one_reduction {e f : termT} :
@@ -300,18 +262,62 @@ Proof.
   eauto using reducibility_candidate_reduction.
 Qed.    
 
-Fixpoint head_appT_list (e : termT) (l : list termT) : termT :=
+Fixpoint head_appT_list (l : list termT) (e : termT) : termT :=
   match l with
   | nil => e
-  | cons f l => appT (head_appT_list e l) f
+  | cons f l => appT (head_appT_list l e) f
   end.
 
-Lemma reducibility_candidate_sat_beta_aux {t :  typeT} {e f : termT} {l : list termT} :
-    reducibility_candidate t (head_appT_list (e[O <- f]) l) ->
+Lemma head_appT_list_one_reduction {e f : termT} {l : list termT} :
+    (e ->1 f) -> (head_appT_list l e ->1 head_appT_list l f).
+Proof.
+  induction l;
+  eauto using one_reduction.
+Qed.
+
+Lemma head_appT_list_beta_strongly_normalizing {e f : termT} {l : list termT} :
+    strongly_normalizing (head_appT_list l (e[O <- f])) ->
     strongly_normalizing f ->
-    reducibility_candidate t (head_appT_list (appT (absT e) f) l).
+    strongly_normalizing (head_appT_list l (appT (absT e) f)).
 Proof.
 Admitted.
+
+Lemma reducibility_candidate_sat_beta_aux {t :  typeT} {e f : termT} {l : list termT} :
+    reducibility_candidate t (head_appT_list l (e[O <- f])) ->
+    strongly_normalizing f ->
+    reducibility_candidate t (head_appT_list l (appT (absT e) f)).
+Proof.
+  move: e f l.
+  induction t;
+  move=> e f l Hredu Hsn.
+  - destruct Hredu as [Hsn2 [n Hredn]].
+    constructor.
+    apply head_appT_list_beta_strongly_normalizing;
+    try assumption.
+    exists n.
+    eapply red_star_next.
+  --- eapply head_appT_list_one_reduction.
+      apply redex_beta.
+  --- assumption.
+  - destruct Hredu as [Hsn2 [b Hredb]].
+    constructor.
+    apply head_appT_list_beta_strongly_normalizing;
+    try assumption.
+    exists b.
+    eapply red_star_next.
+  --- eapply head_appT_list_one_reduction.
+      apply redex_beta.
+  --- assumption.
+  - apply head_appT_list_beta_strongly_normalizing;
+    try assumption.
+  - move=> g Hredug.
+    apply (IHt2 _ _ (cons g l)).
+  --- simpl.
+      simpl in Hredu.
+      apply Hredu.
+      assumption.
+  --- assumption.
+Qed.
 
 Lemma reducibility_candidate_sat_beta {t :  typeT} {e f : termT} :
     reducibility_candidate t (e[O <- f]) ->
@@ -385,6 +391,9 @@ Proof.
   exact reducibility_candidate_strongly_normalizing_aux.2.
 Qed.
 
+Lemma TODO : forall p : Prop, p.
+Proof. Admitted.
+
 Lemma reducibility_candidate_par_bsubst_derivation
   {t : typeT} {e : termT} {G : Context.t} {s : NatMap.t termT} :
     FMap.Empty (Context.fmap G) ->
@@ -392,7 +401,60 @@ Lemma reducibility_candidate_par_bsubst_derivation
       exists e : termT,
       NatMap.MapsTo n e s /\ reducibility_candidate t e) ->
     G |- e :T t -> reducibility_candidate t (par_bsubst s e).
-Admitted.
+Proof.
+  move=> Hem Hmap Hderiv.
+  move: s Hem Hmap.
+  induction Hderiv;
+  move=> s Hem Hmap;
+  simpl.
+  - have [e [Hmaps Hredu]] := Hmap _ _ H.
+    apply NatMap.find_1 in Hmaps.
+    rewrite Hmaps.
+    assumption.
+  - destruct (Hem _ _ H).
+  - move=> f Hredu.
+    apply reducibility_candidate_sat_beta.
+  --- apply TODO.
+  --- eapply reducibility_candidate_strongly_normalizing.
+      exact Hredu.
+  - apply IHHderiv1;
+    try assumption.
+    fold reducibility_candidate.
+    apply IHHderiv2;
+    assumption.
+  - constructor.
+  --- apply normal_form_strongly_normalizing.
+      apply (@normal_form_bool_as_boolT true). 
+  --- exists true;
+      reflexivity.
+  - constructor.
+  --- apply normal_form_strongly_normalizing.
+      apply (@normal_form_bool_as_boolT false). 
+  --- exists false;
+      reflexivity.
+  - apply TODO.
+  - constructor.
+  --- apply normal_form_strongly_normalizing.
+      apply (@normal_form_nat_as_natT O). 
+  --- exists O;
+      reflexivity.
+  - constructor.
+  --- apply strongly_normalizing_f.
+  ----- move=> f g Hred.
+        inversion Hred.
+        assumption.
+  ----- move=> f g Hred.
+        inversion Hred.
+        eauto.
+  ----- apply IHHderiv;
+        assumption.
+  --- have [_ [n Hred]] := IHHderiv s Hem Hmap.
+      exists (S n).
+      simpl.
+      apply reduction_star_sT.
+      assumption.
+  - apply TODO.
+Qed.
 
 Lemma reducibility_candidate_empty_derivation {t : typeT} {e : termT} :
     |- e :T t -> reducibility_candidate t e.
