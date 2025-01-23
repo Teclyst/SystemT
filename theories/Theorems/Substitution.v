@@ -850,9 +850,3 @@ Proof.
     apply shifted_NatMap_empty.
     assumption.
 Qed.
-
-Lemma par_bsubst_bsubst {e f : termT} {m : nat} {s : NatMap.t termT} :
-  (forall n : nat, NatMap.In n s -> m <> n) ->
-    (par_bsubst (NatMap.map (bshift m) s) e) [m <- f] =
-    (par_bsubst (NatMap.add m f s) e).
-(* Not true! *) 
