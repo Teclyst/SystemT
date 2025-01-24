@@ -491,212 +491,7 @@ Fixpoint free_fvarT (e : termT) : FMap.t unit :=
     (FMap.empty unit)
   end.
 
-Module NatMapFacts.
-  Include FSets.FMapFacts.Facts NatMap.
-  Include FSets.FMapFacts.Properties NatMap.
-End NatMapFacts.
-
-Lemma Tra_shifted {A : Type} : NatMapFacts.transpose_neqkey
-  (@NatMap.Equal A)
-  (fun (n : nat) => NatMap.add (S n)).
-Proof.
-  move=> m n e f s Hneq o.
-  destruct (Nat.eqb (S m) o) eqn:Heq1;
-  move/ PeanoNat.Nat.eqb_spec in Heq1;
-  destruct (Nat.eqb (S n) o) eqn:Heq2;
-  move/ PeanoNat.Nat.eqb_spec in Heq2.
-  - destruct Hneq.
-    lia.
-  - rewrite (NatMapFacts.add_neq_o _ (x := S n) (y := o)).
-    assumption.
-    repeat rewrite NatMapFacts.add_eq_o;
-    auto.
-  - rewrite (NatMapFacts.add_neq_o _ (x := S m) (y := o)).
-    assumption.
-    repeat rewrite NatMapFacts.add_eq_o;
-    auto.
-  - repeat rewrite NatMapFacts.add_neq_o;
-    auto.
-Qed.
-
-#[export] Instance Proper_shifted {A : Type} : Morphisms.Proper (eq ==> eq ==> @NatMap.Equal A ==> @NatMap.Equal A)
-  (fun n => NatMap.add (S n)).
-Proof.
-  move=> m n Heq1 e f Heq2 s t Heq3 o.
-  rewrite Heq1.
-  rewrite Heq2.
-  destruct (Nat.eqb (S n) o) eqn:Heq4;
-  move/ PeanoNat.Nat.eqb_spec in Heq4.
-  - repeat rewrite NatMapFacts.add_eq_o;
-    auto.
-  - repeat rewrite NatMapFacts.add_neq_o;
-    auto.
-Qed.
-
-Lemma shifted_NatMap_spec1 {A : Type} {s : NatMap.t A} {n : nat} {a : A} :
-  NatMap.MapsTo n a s -> NatMap.MapsTo (S n) a (shifted_NatMap s).
-Proof.
-  unfold shifted_NatMap.
-  move: s.
-  apply (NatMapFacts.map_induction (P := fun s => NatMap.MapsTo n a s -> NatMap.MapsTo (S n) a (shifted_NatMap s))).
-  - move=> s Hem Hmap.
-    unfold NatMap.Empty.
-    destruct (Hem _ _ Hmap).
-  - move=> s t Hind m b Hnin Hadd Hmap.
-    unfold shifted_NatMap.
-    rewrite (NatMapFacts.fold_Add (eqA := NatMap.Equal) _ _ _ _ (m1 := s) _ (k := m) (e := b)).
-  --- exact Tra_shifted.
-  --- assumption.
-  --- assumption.
-  --- destruct (Nat.eqb m n) eqn:Heq;
-      move/ PeanoNat.Nat.eqb_spec in Heq.
-  ----- rewrite <- Heq.
-        rewrite <- Heq in Hmap.
-        have Heq2 := Hadd m.
-        rewrite NatMapFacts.add_eq_o in Heq2.
-        reflexivity.
-        rewrite (NatMap.find_1 (e := a)) in Heq2.
-        assumption.
-        inversion Heq2.
-        apply NatMap.add_1.
-        reflexivity.
-  ----- apply NatMap.add_2.
-        lia.
-        apply Hind.
-        have Heq2 := Hadd n.
-        rewrite (NatMap.find_1 (e := a)) in Heq2.
-        assumption.
-        rewrite NatMapFacts.add_neq_o in Heq2.
-        assumption.
-        apply NatMap.find_2.
-        auto.
-Qed.
-
-Lemma shifted_NatMap_spec2 {A : Type} {s : NatMap.t A} {n : nat} {a : A} :
-  NatMap.MapsTo n a (shifted_NatMap s) ->
-  exists m : nat, n = S m /\ NatMap.MapsTo m a s.
-Proof.
-  move: s.
-  apply (NatMapFacts.map_induction
-    (P := fun s =>
-      NatMap.MapsTo n a (shifted_NatMap s) ->
-  exists m : nat, n = S m /\ NatMap.MapsTo m a s)).
-  - move=> s Hem Hmap.
-    unfold shifted_NatMap in Hmap.
-    rewrite NatMapFacts.fold_Empty in Hmap.
-    assumption.
-    destruct (NatMap.empty_1 Hmap).
-  - move=> s t Hind m b Hnin Hadd Hmap.
-    unfold shifted_NatMap in Hmap.
-    rewrite (NatMapFacts.fold_Add (eqA := NatMap.Equal) _ _ _ _ (m1 := s) _ (k := m) (e := b)) in Hmap.
-  --- exact Tra_shifted.
-  --- assumption.
-  --- assumption.
-  --- destruct (Nat.eqb n (S m)) eqn:Heq;
-      move/ PeanoNat.Nat.eqb_spec in Heq.
-  ----- exists m.
-        constructor.
-  ------- assumption.
-  ------- rewrite <- Heq in Hmap.
-          rewrite NatMapFacts.add_mapsto_iff in Hmap.
-          destruct Hmap as [[_ Heq2] | [Habs _]].
-  --------- rewrite Heq2 in Hadd.
-            have Heq3 := Hadd m.
-            rewrite NatMapFacts.add_eq_o in Heq3.
-            reflexivity.
-            apply NatMap.find_2.
-            exact Heq3.
-  --------- destruct (Habs (eq_refl n)). 
-  ----- apply (NatMap.add_3 (x := S m) (e := a)) in Hmap.
-  ------- destruct (Hind Hmap) as [o [Heq2 Hmap2]].
-          exists o.
-          constructor.
-  --------- exact Heq2.
-  --------- have Heq3 := Hadd o.
-            rewrite NatMapFacts.add_neq_o in Heq3.
-            lia.
-            rewrite (NatMap.find_1 (m := s) (e := a)) in Heq3.
-            assumption.
-            apply NatMap.find_2.
-            assumption.
-  ------- lia.
-Qed.
-
-Lemma shifted_NatMap_spec1_alt {A : Type} {s : NatMap.t A} {n : nat} :
-  NatMap.find n s = NatMap.find (S n) (shifted_NatMap s).
-Proof.
-  destruct (NatMap.find n s) eqn:Heq.
-  - apply NatMap.find_2 in Heq.
-    apply shifted_NatMap_spec1 in Heq.
-    apply NatMap.find_1 in Heq.
-    rewrite Heq.
-    reflexivity.
-  - destruct (NatMap.find (elt:=A) (S n) (shifted_NatMap s)) eqn:Heq2.
-  --- apply NatMap.find_2 in Heq2.
-      apply shifted_NatMap_spec2 in Heq2.
-      destruct Heq2 as [m [Heq2 Hmap]].
-      inversion Heq2.
-      rewrite H0 in Heq.
-      apply NatMap.find_1 in Hmap.
-      rewrite Hmap in Heq.
-      discriminate Heq.
-  --- reflexivity.
-Qed.
-
-Lemma shifted_NatMap_spec_iff {A : Type} {s : NatMap.t A} {n : nat} {a : A} :
-  NatMap.MapsTo n a (shifted_NatMap s) <->
-  exists m : nat, n = S m /\ NatMap.MapsTo m a s.
-Proof.
-  constructor.
-  - exact shifted_NatMap_spec2.
-  - move=> [m [Heq Hmap]].
-    rewrite Heq.
-    apply shifted_NatMap_spec1.
-    assumption. 
-Qed.
-
-Lemma shifted_NatMap_O {A : Type} {s : NatMap.t A} :
-  ~ NatMap.In O (shifted_NatMap s).
-Proof.
-  move=> [e Hmap].
-  have foo := shifted_NatMap_spec2.
-  unfold NatMap.MapsTo in foo.
-  destruct (foo _ _ _ _ Hmap) as [m [Heq _]].
-  discriminate Heq.
-Qed.
-
-Inductive bvarT_no_occur : nat -> termT -> Prop :=
-  | bvarT_no_occur_fvarT :
-    forall n : nat, forall f : fident,
-    bvarT_no_occur n (fvarT f) 
-  | bvarT_no_occur_bvarT :
-    forall n m : nat, m <> n -> bvarT_no_occur n (bvarT m)
-  | bvarT_no_occur_absT :
-    forall n : nat, forall e : termT, bvarT_no_occur (S n) e ->
-    bvarT_no_occur n (absT e)
-  | bvarT_no_occur_appT :
-    forall n : nat, forall e f : termT,
-    bvarT_no_occur n e -> bvarT_no_occur n f ->
-    bvarT_no_occur n (appT e f)
-  | bvarT_no_occur_falseT :
-    forall n : nat, bvarT_no_occur n falseT
-  | bvarT_no_occur_trueT :
-    forall n : nat, bvarT_no_occur n trueT
-  | bvarT_no_occur_iteT :
-    forall n : nat, forall e f g : termT,
-    bvarT_no_occur n e -> bvarT_no_occur n f -> bvarT_no_occur n g ->
-    bvarT_no_occur n (iteT e f g)
-  | bvarT_no_occur_oT :
-    forall n : nat, bvarT_no_occur n oT
-  | bvarT_no_occur_sT :
-    forall n : nat, forall e : termT, bvarT_no_occur n e ->
-    bvarT_no_occur n (sT e)
-  | bvarT_no_occur_recT :
-    forall n : nat, forall e f g : termT,
-    bvarT_no_occur n e -> bvarT_no_occur n f -> bvarT_no_occur n g ->
-    bvarT_no_occur n (recT e f g).
-
-#[export] Instance Proper_par_bsusbst : Morphisms.Proper (@FMap.Equal termT ==> eq ==> eq)
+#[export] Instance Proper_par_fsusbst : Morphisms.Proper (@FMap.Equal termT ==> eq ==> eq)
   par_fsubst.
 Proof.
   move=> s t Heq1 e f Heq2.
@@ -796,57 +591,74 @@ Proof.
     exact (IHe _ _ _).
 Qed.
 
-Lemma shifted_NatMap_empty {A : Type} {s : NatMap.t A} :
-  NatMap.Empty s -> NatMap.Empty (shifted_NatMap s).
+Lemma par_bsubst_empty {e : termT} {n : nat} :
+    par_bsubst n nil e = e.
 Proof.
-  move=> Hem.
-  unfold shifted_NatMap.
-  rewrite NatMapFacts.fold_Empty.
-  - assumption.
-  - exact (@NatMap.empty_1 A).
-Qed.
-
-Lemma shifted_NatMap_map {A B : Type} {s : NatMap.t A} {f : A -> B} :
-  NatMap.Equal (NatMap.map f (shifted_NatMap s)) (shifted_NatMap (NatMap.map f s)).
-Proof.
-  move=> [ | n];
-  rewrite NatMapFacts.map_o.
-  - repeat rewrite (NatMapFacts.not_find_in_iff _ _).1;
-    auto using shifted_NatMap_O.
-  - repeat rewrite <- shifted_NatMap_spec1_alt.
-    rewrite NatMapFacts.map_o.
-    reflexivity.
-Qed.
-
-Lemma map_empty {A B : Type} {s : NatMap.t A} {f : A -> B} :
-  NatMap.Empty s -> NatMap.Empty (NatMap.map f s).
-Proof.
-  move=> Hem n g Hmap.
-  simpl in Hmap.
-  have baz := NatMapFacts.map_mapsto_iff.
-  unfold NatMap.MapsTo in baz.
-  rewrite baz in Hmap.
-  destruct Hmap as [a [_ Habs]].
-  eapply (Hem n).
-  exact Habs.
-Qed.
-
-Lemma par_bsubst_empty {e : termT} {s : NatMap.t termT} :
-  NatMap.Empty s -> par_bsubst s e = e.
-Proof.
-  move: s.
+  move: n.
   induction e;
-  move=> s Hem;
+  move=> m;
   simpl;
   try f_equal;
   auto.
-  - destruct (NatMap.find n s) eqn:Heq.
-  --- apply NatMap.find_2 in Heq.
-      destruct (Hem n t Heq).
+  - destruct (PeanoNat.Nat.ltb n m).
   --- reflexivity.
-  - f_equal.
-    apply IHe.
-    apply map_empty.
-    apply shifted_NatMap_empty.
-    assumption.
+  --- destruct (n - m);
+      destruct n;
+      reflexivity. 
+Qed.
+
+Lemma par_bsubst_bsubst_eq {e f : termT} {n : nat} {s : list termT} :
+    (par_bsubst (S n) (List.map (bshift n) s) e)[n <- f] =
+    (par_bsubst n (f :: s) e).
+Proof.
+  move: n s f.
+  induction e;
+  move=> m s h;
+  simpl;
+  try (f_equal;
+    auto).
+  - destruct (PeanoNat.Nat.ltb n (S m)) eqn:Hlt1;
+    destruct (PeanoNat.Nat.ltb n m) eqn:Hlt2;
+    move/ PeanoNat.Nat.ltb_spec0 in Hlt1;
+    move/ PeanoNat.Nat.ltb_spec0 in Hlt2;
+    try lia;
+    simpl;
+    destruct (PeanoNat.Nat.compare m n) eqn:Hcomp;
+    try rewrite PeanoNat.Nat.compare_eq_iff in Hcomp;
+    try rewrite PeanoNat.Nat.compare_lt_iff in Hcomp;
+    try rewrite PeanoNat.Nat.compare_gt_iff in Hcomp;
+    try lia.
+  --- reflexivity.
+  --- rewrite Hcomp.
+      rewrite PeanoNat.Nat.sub_diag.
+      reflexivity.
+  --- have Heq : (n - m = S (n - S m)).
+      lia.
+      rewrite Heq.
+      simpl.
+      rewrite List.nth_error_map.
+      destruct (List.nth_error s (n - S m)) eqn:Heq2;
+      simpl.
+  ----- rewrite bshift_bsubst_eq.
+        reflexivity.
+  ----- rewrite List.map_length.
+        rewrite List.nth_error_None in Heq2.
+        destruct (PeanoNat.Nat.compare m (n - length s)) eqn:Hcomp2;
+        try rewrite PeanoNat.Nat.compare_eq_iff in Hcomp2;
+        try rewrite PeanoNat.Nat.compare_lt_iff in Hcomp2;
+        try rewrite PeanoNat.Nat.compare_gt_iff in Hcomp2;
+        destruct (n - length s) eqn:Heq3;
+        try lia.
+        have Heq4 : n - S (length s) = n0.
+        lia.
+        rewrite Heq4.
+        reflexivity.
+  - rewrite List.map_map.
+    rewrite (List.map_ext _
+      (fun x => bshift (S m) (bshift O x))).
+  --- move=> f.
+      apply bshift_bshift.
+      lia.
+  --- rewrite <- List.map_map.
+      exact (IHe _ _ _). 
 Qed.

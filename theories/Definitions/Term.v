@@ -212,33 +212,31 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   | _ => e
   end.
 
-Definition shifted_NatMap {A : Type} (s : NatMap.t A) :=
-  NatMap.fold (fun n => NatMap.add (S n)) s (NatMap.empty _).
-
-Fixpoint par_bsubst (s : NatMap.t termT) (e : termT) :=
-      match e with
-      | bvarT m =>
-        match (NatMap.find m s) with
-        | Some a => a
-        | _ => bvarT m
-        end
-      | absT e => absT (par_bsubst
-        (NatMap.map (bshift O) (shifted_NatMap s)) e)
-      | appT e f =>
-        appT (par_bsubst s e) (par_bsubst s f)
-      | sT e => sT (par_bsubst s e)
-      | iteT e f g =>
-        iteT
-          (par_bsubst s e)
-          (par_bsubst s f)
-          (par_bsubst s g)
-        | recT e f g =>
-          recT
-            (par_bsubst s e)
-            (par_bsubst s f)
-            (par_bsubst s g)
-        | _ => e
-      end.
+Fixpoint par_bsubst (n : nat) (s : list termT) (e : termT) :=
+  match e with
+  | bvarT m =>
+    match (m <? n), (List.nth_error s (m - n)) with
+    | true, _ => bvarT m
+    | _, Some a => a
+    | _, _ => bvarT (m - List.length s) 
+    end
+  | absT e => absT (par_bsubst (S n)
+    (List.map (bshift O) s) e)
+  | appT e f =>
+    appT (par_bsubst n s e) (par_bsubst n s f)
+  | sT e => sT (par_bsubst n s e)
+  | iteT e f g =>
+    iteT
+      (par_bsubst n s e)
+      (par_bsubst n s f)
+      (par_bsubst n s g)
+    | recT e f g =>
+      recT
+        (par_bsubst n s e)
+        (par_bsubst n s f)
+        (par_bsubst n s g)
+    | _ => e
+  end.
 
 Notation "e [ n <- f ]" := (bsubst n e f) (at level 50) : system_t_term_scope.
 

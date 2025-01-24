@@ -553,15 +553,13 @@ Hint Resolve
   reducibility_candidate_sT
   reducibility_candidate_recT : reducibility_candidate_lemmas.
 
-Axiom TODO : False.
-
 Lemma reducibility_candidate_par_bsubst_derivation
-  {t : typeT} {e : termT} {G : Context.t} {s : NatMap.t termT} :
+  {t : typeT} {e : termT} {G : Context.t} {s : list termT} :
     (forall (n : nat) (t : typeT) (e : termT),
       Context.bMapsTo n t G ->
-      NatMap.MapsTo n e s ->
+      List.nth_error s n = Some e ->
       reducibility_candidate t e) ->
-    G |- e :T t -> reducibility_candidate t (par_bsubst s e).
+    G |- e :T t -> reducibility_candidate t (par_bsubst O s e).
 Proof.
   move=> Hmap Hderiv.
   move: s Hmap.
@@ -570,15 +568,29 @@ Proof.
   eauto with reducibility_candidate_lemmas;
   simpl;
   eauto with reducibility_candidate_lemmas.
-  - destruct (NatMap.find n s) as [u | ] eqn:Heq.
+  - rewrite Nat.sub_0_r.
+    destruct (List.nth_error s n) as [u | ] eqn:Heq.
   --- apply (Hmap n);
-      auto using NatMap.find_2.
+      auto.
   --- exact reducibility_candidate_bvarT. 
   - move=> f Hredu.
     apply (reducibility_candidate_appT (t := t)).
   --- apply reducibility_candidate_absT.
       move=> g Hredug.
-      destruct TODO.
+      rewrite par_bsubst_bsubst_eq.
+      apply IHHderiv.
+      move=> n v h Hmap2 Heq.
+      destruct n;
+      simpl in Heq;
+      unfold Context.bMapsTo in Hmap2;
+      simpl in Hmap2.
+  ----- inversion Heq.
+        inversion Hmap2.
+        rewrite <- H0.
+        rewrite <- H1.
+        assumption.
+  ----- apply (Hmap n);
+        auto. 
   --- assumption. 
   - apply reducibility_candidate_sT.
     auto. 
@@ -587,7 +599,12 @@ Qed.
 Lemma reducibility_candidate_derivation {G : Context.t} {t : typeT} {e : termT} :
     G |- e :T t -> reducibility_candidate t e.
 Proof.
-Admitted.
+  rewrite <- (par_bsubst_empty (n := O)) at -1.
+  apply (reducibility_candidate_par_bsubst_derivation (s := nil)).
+  move=> [ | n] u f _ Heq;
+  simpl in Heq;
+  discriminate Heq.
+Qed.
 
 Theorem derivation_strongly_normalizing
   {e : termT} {t : typeT} {G : Context.t} :
