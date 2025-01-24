@@ -1143,70 +1143,6 @@ Proof.
   ).
 Qed.
 
-Lemma reducibility_candidate_sat_iteT_falseT {t : typeT} {e f : termT} :
-    reducibility_candidate t f ->
-    strongly_normalizing e ->
-    reducibility_candidate t (iteT falseT e f).
-Proof.
-  exact (
-    reducibility_candidate_sat_iteT_falseT_aux
-      (t := t) (e := e) (f := f) (l := nil)
-  ).
-Qed.
-
-Lemma reducibility_candidate_sat_iteT_trueT {t : typeT} {e f : termT} :
-    reducibility_candidate t e ->
-    strongly_normalizing f ->
-    reducibility_candidate t (iteT trueT e f).
-Proof.
-  exact (
-    reducibility_candidate_sat_iteT_trueT_aux
-      (t := t) (e := e) (f := f) (l := nil)
-  ).
-Qed.
-
-Lemma reducibility_candidate_sat_recT_oT {t : typeT} {e f : termT} :
-    reducibility_candidate t e ->
-    strongly_normalizing f ->
-    reducibility_candidate t (recT e f oT).
-Proof.
-  exact (
-    reducibility_candidate_sat_recT_oT_aux
-      (t := t) (e := e) (f := f) (l := nil)
-  ).
-Qed.
-
-Lemma reducibility_candidate_sat_recT_sT {t : typeT} {e f g : termT} :
-    reducibility_candidate t (appT (appT f (recT e f g)) g) ->
-    reducibility_candidate t (recT e f (sT g)).
-Proof.
-exact (
-    reducibility_candidate_sat_recT_sT_aux
-      (t := t) (e := e) (f := f) (l := nil)
-  ).
-Qed.
-
-Lemma reducibility_candidate_sat_recT {t : typeT} {e f g : termT} {n : nat} :
-    strongly_normalizing g ->
-    reducibility_candidate (t ->T natT ->T t) f ->
-    (g ->* nat_as_natT n) ->
-    reducibility_candidate t (recT e f (nat_as_natT n)) ->
-    reducibility_candidate t (recT e f g).
-Proof.
-Admitted.
-
-Lemma reducibility_candidate_sat_iteT {t : typeT} {e f g : termT} {b : bool} :
-    strongly_normalizing e ->
-    (e ->* bool_as_boolT b) ->
-    reducibility_candidate t (iteT (bool_as_boolT b) f g) ->
-    reducibility_candidate t (iteT e f g).
-Proof.
-  exact (
-    reducibility_candidate_sat_iteT_aux
-      (t := t) (e := e) (f := f) (g := g) (b := b) (l := nil)
-  ).
-Qed.
-
 Lemma reducibility_candidate_strongly_normalizing_aux {t : typeT} :
     (exists e : termT, reducibility_candidate t e /\ bound_closed e) /\
     (forall e : termT, reducibility_candidate t e -> strongly_normalizing e).
@@ -1269,6 +1205,83 @@ Lemma reducibility_candidate_strongly_normalizing {t : typeT} {e : termT} :
 Proof.
   move: e.
   exact reducibility_candidate_strongly_normalizing_aux.2.
+Qed.
+
+Lemma reducibility_candidate_sat_iteT_falseT {t : typeT} {e f : termT} :
+    reducibility_candidate t f ->
+    strongly_normalizing e ->
+    reducibility_candidate t (iteT falseT e f).
+Proof.
+  exact (
+    reducibility_candidate_sat_iteT_falseT_aux
+      (t := t) (e := e) (f := f) (l := nil)
+  ).
+Qed.
+
+Lemma reducibility_candidate_sat_iteT_trueT {t : typeT} {e f : termT} :
+    reducibility_candidate t e ->
+    strongly_normalizing f ->
+    reducibility_candidate t (iteT trueT e f).
+Proof.
+  exact (
+    reducibility_candidate_sat_iteT_trueT_aux
+      (t := t) (e := e) (f := f) (l := nil)
+  ).
+Qed.
+
+Lemma reducibility_candidate_sat_recT_oT {t : typeT} {e f : termT} :
+    reducibility_candidate t e ->
+    strongly_normalizing f ->
+    reducibility_candidate t (recT e f oT).
+Proof.
+  exact (
+    reducibility_candidate_sat_recT_oT_aux
+      (t := t) (e := e) (f := f) (l := nil)
+  ).
+Qed.
+
+Lemma reducibility_candidate_sat_recT_sT {t : typeT} {e f g : termT} :
+    reducibility_candidate t (appT (appT f (recT e f g)) g) ->
+    reducibility_candidate t (recT e f (sT g)).
+Proof.
+exact (
+    reducibility_candidate_sat_recT_sT_aux
+      (t := t) (e := e) (f := f) (l := nil)
+  ).
+Qed.
+
+Lemma reducibility_candidate_sat_recT {t : typeT} {e f g : termT} {n : nat} :
+    strongly_normalizing g ->
+    reducibility_candidate (t ->T natT ->T t) f ->
+    (g ->* nat_as_natT n) ->
+    reducibility_candidate t (recT e f (nat_as_natT n)) ->
+    reducibility_candidate t (recT e f g).
+Proof.
+  move: e f g.
+  induction n;
+  move=> e f g Hsn Hredue Hreduf Hred Hredu.
+  - simpl.
+    simpl in Hredu.
+    induction Hsn.
+    move: Hredu.
+    generalize (eq_refl (recT e f oT)).
+    generalize (recT e f oT) at -2.
+    move=> g Heq Hredug.
+    have Hsn2 := reducibility_candidate_strongly_normalizing Hredug.
+    induction Hsn2.
+    apply TODO.
+  -    
+
+Lemma reducibility_candidate_sat_iteT {t : typeT} {e f g : termT} {b : bool} :
+    strongly_normalizing e ->
+    (e ->* bool_as_boolT b) ->
+    reducibility_candidate t (iteT (bool_as_boolT b) f g) ->
+    reducibility_candidate t (iteT e f g).
+Proof.
+  exact (
+    reducibility_candidate_sat_iteT_aux
+      (t := t) (e := e) (f := f) (g := g) (b := b) (l := nil)
+  ).
 Qed.
 
 Lemma reducibility_candidate_par_bsubst_derivation

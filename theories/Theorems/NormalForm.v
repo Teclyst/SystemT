@@ -80,6 +80,18 @@ Proof.
   eauto.
 Qed.
 
+Lemma normal_form_f_inv {r : termT -> termT} {e : termT} :
+    (forall e f : termT, (e ->1 f) -> (r e ->1 r f)) -> 
+    normal_form (r e) ->
+    normal_form e.
+Proof.
+  intros Himpl Hnf Hred.
+  destruct Hred as [g Hred].
+  apply Hnf.
+  eexists.
+  eauto.
+Qed.
+
 Lemma normal_form_trueT :
     normal_form trueT.
 Proof.
@@ -130,4 +142,63 @@ Proof.
   induction n.
   - exact normal_form_oT.
   - eauto using normal_form_sT.
+Qed.
+
+Lemma normal_form_type {e : termT} {t : typeT} :
+    normal_form e ->
+    |- e :T t ->
+      match t with 
+        | boolT => exists b : bool, e = bool_as_boolT b
+        | natT => exists n : nat, e = nat_as_natT n
+        | t ->T u => exists f : termT, e = absT f
+        | _ => True
+      end.
+Proof.
+  move: t.
+  induction e;
+  move=> t Hnf Htype;
+  inversion Htype.
+  - destruct (FMap.empty_1 H1). 
+  - destruct n;
+    discriminate H1.
+  - eauto.
+  - destruct (IHe1 (t0 ->T t)).
+  --- apply (normal_form_f_inv (r := fun e => appT e e2));
+      eauto using one_reduction.
+  --- assumption.
+  --- rewrite H5 in Hnf.
+      destruct Hnf.
+      eexists.
+      eauto using one_reduction.
+  - exists true.
+    auto.
+  - exists false.
+    auto.
+  - destruct (IHe1 boolT).
+  --- apply (normal_form_f_inv (r := fun e => iteT e e2 e3));
+      eauto using one_reduction.
+  --- assumption.
+  --- rewrite H7 in Hnf.
+      destruct Hnf.
+      destruct x;
+      eexists;
+      eauto using one_reduction.
+  - exists O.
+    auto.
+  - destruct (IHe natT).
+  --- apply (normal_form_f_inv (r := sT));
+      eauto using one_reduction.
+  --- assumption.
+  --- exists (S x).
+      rewrite H3.
+      reflexivity.
+  - destruct (IHe3 natT).
+  --- apply (normal_form_f_inv (r := recT e1 e2));
+      eauto using one_reduction.
+  --- assumption.
+  --- rewrite H7 in Hnf.
+      destruct Hnf.
+      destruct x;
+      eexists;
+      eauto using one_reduction.
 Qed.
