@@ -17,23 +17,6 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_term_scope.
 Open Scope system_t_type_scope.
 
-(**
-  We will later want to build elements of reducibility candidates.
-  To avoid issues with bound variables gettting captured, we'll use
-  one free variable instead.
-   
-  However, free variables idents are defined through an abstract
-  signature to be generic, so we can't just find an example... or so
-  it would seem. Indeed, we have the [Fident.new] function, which
-  can be used over an empty [Fmap.t] to produce a default [fident].
-
-  (For the current implementation for [nat] and [string], it would
-  respectively be [1] and ["_"].)
-*)
-Definition default_fident := FIdent.new _ (FMap.empty unit).
-
-Definition default_fvarT := fvarT (default_fident).
-
 Lemma normal_form_strongly_normalizing {e : termT} :
     normal_form e -> strongly_normalizing e.
 Proof.
@@ -87,44 +70,12 @@ Proof.
   - reflexivity.
 Qed.
 
-Lemma strongly_normalizing_absT_inv {e : termT} :
-    strongly_normalizing (absT e) ->
-    strongly_normalizing e.
-Proof.
-  apply strongly_normalizing_f_inv.
-  eauto using one_reduction.
-Qed.
-
-Lemma strongly_normalizing_appT_inv_l {e f : termT} :
-    strongly_normalizing (appT e f) ->
-    strongly_normalizing e.
-Proof.
-  apply (strongly_normalizing_f_inv (r := (fun e => appT e f))).
-  eauto using one_reduction.
-Qed.
-
-Lemma strongly_normalizing_appT_inv_r {e f : termT} :
-    strongly_normalizing (appT e f) ->
-    strongly_normalizing f.
-Proof.
-  apply strongly_normalizing_f_inv.
-  eauto using one_reduction.
-Qed.
-
 Lemma strongly_normalizing_bsubst_inv {e f : termT} {n : nat} :
     strongly_normalizing (e[n <- f]) ->
     strongly_normalizing e.
 Proof.
   apply (strongly_normalizing_f_inv (r := fun e => e [n <- f])).
   eauto using one_reduction_bsubst_l.
-Qed.
-
-Lemma strongly_normalizing_par_fsubst_inv {e : termT} {s : FMap.t termT} :
-    strongly_normalizing (par_fsubst s e) ->
-    strongly_normalizing e.
-Proof.
-  apply strongly_normalizing_f_inv.
-  eauto using one_reduction_par_fsubst.
 Qed.
 
 Lemma strongly_normalizing_one_reduction {e f : termT} :
@@ -156,47 +107,6 @@ Lemma strongly_normalizing_reduction_star {e f : termT} :
 Proof.
   move=> [n Hred].
   exact (strongly_normalizing_reduction Hred).
-Qed.
-
-Lemma strongly_normalizing_redex_beta_inv {e f : termT} :
-    strongly_normalizing (e[O <- f]) ->
-    strongly_normalizing f ->
-    strongly_normalizing (appT (absT e) f).
-Proof.
-  move=> Hsnsbst.
-  have Hsne := strongly_normalizing_bsubst_inv Hsnsbst.
-  move: Hsnsbst.
-  move: f.
-  induction Hsne as [e Hsne Hinde].
-  move=> f Hsnsbst Hsnf.
-  move: Hinde Hsne Hsnsbst.
-  move: e.
-  induction Hsnf as [f Hsnf Hindf].
-  move=> e Hinde Hsne Hsnsbst. 
-  constructor.
-  move=> g Hred.
-  inversion Hred; auto.
-  - inversion H2.
-    apply Hinde.
-  --- unfold "1<-".
-      assumption.
-  --- eapply strongly_normalizing_reduction_star.
-  ----- eapply reduction_star_bsubst_l.
-        apply one_reduction_reduction_star.
-        exact H4.
-  ----- assumption.
-  --- constructor.
-      assumption.
-  - apply Hindf.    
-  --- unfold "1<-".
-      assumption.
-  --- assumption.
-  --- exact Hsne.
-  --- eapply strongly_normalizing_reduction_star.
-  ----- eapply reduction_star_bsubst_r.
-        apply one_reduction_reduction_star.
-        exact H2.
-  ----- assumption. 
 Qed.
 
 Fixpoint reducibility_candidate (t : typeT) : termT -> Prop :=
@@ -270,15 +180,22 @@ Proof.
   destruct IHt2 as [IHt21 IHt23].
   constructor.
   - move=> e Hredu.
-    have bar : reducibility_candidate t1 default_fvarT.
+    have bar : reducibility_candidate t1 (bvarT O).
+    (*
+      The choice of [bvarT O] is completely arbitrary.
+      We only need the fact that [reducibility_candidate t1] is
+      non-empty. This is the case because it contains [bvarT O],
+      by (CR3).
+    *)
   --- apply IHt13.
   ----- eauto using neutral.
   ----- move=> f Hred.
         inversion Hred.
-  --- eapply strongly_normalizing_appT_inv_l.
+  --- eapply (strongly_normalizing_f_inv (r := fun e => appT e _)).
+  ----- eauto using one_reduction.
   ----- eapply IHt21.
         simpl in Hredu.
-        apply (Hredu default_fvarT).
+        apply (Hredu (bvarT O)).
         assumption.
   - simpl.
     move=> e Hneut Hforall f Hreduf.
@@ -352,7 +269,7 @@ Proof.
   have Hsn :=
     strongly_normalizing_bsubst_inv
       (reducibility_candidate_cr1
-        (Hforall default_fvarT reducibility_candidate_fvarT)).
+        (Hforall (bvarT O) reducibility_candidate_bvarT)).
   simpl.
   induction Hsn.
   move=> f Hreduf.

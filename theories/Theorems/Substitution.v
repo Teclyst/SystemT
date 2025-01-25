@@ -459,38 +459,6 @@ Proof.
   lia.
 Qed.
 
-Definition FMap_union {elt elt' : Type} :=
-  FMap.map2 (fun (_ : option elt) (_ : option elt') => Some tt).
-
-Lemma FMap_unit_union_spec
-  {elt elt' : Type} {s : FMap.t elt} {t : FMap.t elt'} {x : fident} :
-    FMap.In x (FMap_union s t) <-> FMap.In x s \/ FMap.In x t.
-Proof.
-  constructor; unfold FMap_union.
-  - exact (@FMap.map2_2 _ _ _ _ _ _ _).
-  - intro Hor.
-    unfold FMap.In.
-    exists tt.
-    apply FMap.find_2.
-    apply FMap.map2_1.
-    assumption.
-Qed. 
-
-Fixpoint free_fvarT (e : termT) : FMap.t unit :=
-  match e with
-  | fvarT x => FMap.add x tt (FMap.empty unit)
-  | absT e
-  | sT e => free_fvarT e
-  | appT e f => FMap_union (free_fvarT e) (free_fvarT f)
-  | iteT e f g
-  | recT e f g =>
-    FMap_union
-      (free_fvarT e)
-      (FMap_union (free_fvarT f) (free_fvarT g))
-  | _ =>
-    (FMap.empty unit)
-  end.
-
 #[export] Instance Proper_par_fsusbst : Morphisms.Proper (@FMap.Equal termT ==> eq ==> eq)
   par_fsubst.
 Proof.
@@ -512,7 +480,7 @@ Proof.
     reflexivity.  
 Qed.
 
-Lemma FMap_map_compose
+Lemma FMap_map_map
   {A B C : Type} {f : A -> B} {g : B -> C} {s : FMap.t A} :
   FMap.Equal (FMap.map g (FMap.map f s)) (FMap.map (fun a => g (f a)) s).
 Proof.
@@ -529,7 +497,7 @@ Lemma FMap_map_bshift_bshift
         (FMap.map (bshift m) (FMap.map (bshift n) s))
         (FMap.map (bshift (S n)) (FMap.map (bshift m) s)).
 Proof.
-  repeat rewrite FMap_map_compose.
+  repeat rewrite FMap_map_map.
   move=> Hle a.
   repeat rewrite FMapFacts.map_o.
   destruct (FMap.find a s);
