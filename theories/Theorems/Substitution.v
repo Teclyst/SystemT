@@ -56,7 +56,15 @@ Proof.
   induction e;
   move=> m' n' H4;
   eauto;
-  simpl.
+  simpl;
+  try (
+    try rewrite (IHe _ _ H4);
+    try rewrite (IHe1 _ _ H4);
+    try rewrite (IHe2 _ _ H4);
+    try rewrite (IHe3 _ _ H4);
+    reflexivity;
+    fail
+  ).
   - destruct (PeanoNat.Nat.leb n' n) eqn:H1;
     destruct (PeanoNat.Nat.leb m' n) eqn:H2;
     move/ PeanoNat.Nat.leb_spec0 in H1;
@@ -82,19 +90,6 @@ Proof.
         reflexivity.
   - rewrite IHe.
     lia.
-    reflexivity.
-  - rewrite (IHe1 _ _ H4).
-    rewrite (IHe2 _ _ H4).
-    reflexivity.
-  - rewrite (IHe1 _ _ H4).
-    rewrite (IHe2 _ _ H4).
-    rewrite (IHe3 _ _ H4).
-    reflexivity.
-  - rewrite (IHe _ _ H4).
-    reflexivity.
-  - rewrite (IHe1 _ _ H4).
-    rewrite (IHe2 _ _ H4).
-    rewrite (IHe3 _ _ H4).
     reflexivity.
 Qed.
 
@@ -133,9 +128,13 @@ Proof.
   move: f m n.
   induction e;
   move=> f' m' n' H4;
-  eauto.
-  - simpl;
-    destruct (PeanoNat.Nat.compare m' n') eqn:H1;
+  eauto;
+  simpl;
+  try (
+    f_equal;
+    eauto
+  ).
+  - destruct (PeanoNat.Nat.compare m' n') eqn:H1;
     destruct (PeanoNat.Nat.compare m' n) eqn:H2;
     destruct (PeanoNat.Nat.compare n n') eqn:H3;
     try rewrite PeanoNat.Nat.compare_eq_iff in H1;
@@ -234,24 +233,11 @@ Proof.
       rewrite <- PeanoNat.Nat.compare_gt_iff in H2.
       rewrite H2.
       reflexivity.
-  - simpl.
-    rewrite bshift_bshift.
+  - rewrite bshift_bshift.
     lia.
     f_equal.
     apply IHe.
     lia.
-  - simpl.
-    f_equal;
-    eauto.
-  - simpl.
-    f_equal;
-    eauto.
-  - simpl.
-    f_equal;
-    eauto.
-  - simpl.
-    f_equal;
-    eauto.
 Qed.
 
 Lemma bshift_bsubst' {e f : termT} {m n : nat} :

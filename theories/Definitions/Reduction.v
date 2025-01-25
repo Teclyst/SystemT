@@ -12,6 +12,12 @@ Inductive one_reduction : termT -> termT -> Prop :=
   | redex_beta :
     forall e f : termT,
     one_reduction (appT (absT e) f) (e[O <- f])
+  | redex_plT_pairT :
+    forall e f : termT,
+    one_reduction (plT (pairT e f)) e
+  | redex_prT_pairT :
+    forall e f : termT,
+    one_reduction (prT (pairT e f)) f
   | redex_iteT_trueT :
     forall e f : termT,
     one_reduction (iteT trueT e f) e
@@ -36,6 +42,22 @@ Inductive one_reduction : termT -> termT -> Prop :=
     forall e f g : termT,
     one_reduction f g ->
     one_reduction (appT e f) (appT e g)
+  | redind_pairT_l :
+    forall e f g : termT,
+    one_reduction e f ->
+    one_reduction (pairT e g) (pairT f g)
+  | redind_pairT_r :
+    forall e f g : termT,
+    one_reduction f g ->
+    one_reduction (pairT e f) (pairT e g)
+  | redind_plT :
+    forall e f : termT,
+    one_reduction e f ->
+    one_reduction (plT e) (plT f)
+  | redind_prT :
+    forall e f : termT,
+    one_reduction e f ->
+    one_reduction (prT e) (prT f)
   | redind_iteT_l :
     forall e f g h : termT,
     one_reduction e f ->
@@ -102,13 +124,18 @@ Definition normal_form (e : termT) : Prop :=
 Fixpoint reducibleb (e : termT) : bool :=
   match e with
   | appT (absT _) _
+  | plT (pairT _ _)
+  | prT (pairT _ _)
   | iteT trueT _ _
   | iteT falseT _ _
   | recT _ _ oT
   | recT _ _ (sT _) => true
   | absT e
+  | plT e
+  | prT e
   | sT e => reducibleb e
-  | appT e f => reducibleb e || reducibleb f
+  | appT e f
+  | pairT e f => reducibleb e || reducibleb f
   | iteT e f g
   | recT e f g => reducibleb e || reducibleb f || reducibleb g
   | _ => false
@@ -117,16 +144,26 @@ Fixpoint reducibleb (e : termT) : bool :=
 Fixpoint left_reduce (e : termT) : option termT :=
   match e with
   | appT (absT e) f => Some (e[O <- f])
+  | plT (pairT e f) => Some e
+  | prT (pairT e f) => Some f
   | iteT trueT e f => Some e
   | iteT falseT e f => Some f 
   | recT e f oT => Some e
   | recT e f (sT g) => Some (appT f (recT e f g))
   | absT e => option_map absT (left_reduce e)
+  | plT e => option_map plT (left_reduce e)
+  | prT e => option_map prT (left_reduce e)
   | sT e => option_map sT (left_reduce e)
   | appT e f =>
     match left_reduce e, left_reduce f with
     | Some e, _ => Some (appT e f)
     | _, Some f => Some (appT e f)
+    | _, _ => None
+    end
+  | pairT e f =>
+    match left_reduce e, left_reduce f with
+    | Some e, _ => Some (pairT e f)
+    | _, Some f => Some (pairT e f)
     | _, _ => None
     end
   | iteT e f g =>

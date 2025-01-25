@@ -16,9 +16,12 @@ Inductive typeT :=
   | natT : typeT
   | boolT : typeT
   | tvarT : tident -> typeT
-  | funT : typeT -> typeT -> typeT.
+  | funT : typeT -> typeT -> typeT
+  | prodT : typeT -> typeT -> typeT.
 
 Notation "t ->T u" := (funT t u) (at level 80, right associativity) : system_t_type_scope.
+
+Notation "t *T u" := (prodT t u) (at level 65, left associativity) : system_t_type_scope.
 
 Fixpoint typeT_tsubst (x : tident) (a t : typeT) :=
   match t with
@@ -29,7 +32,9 @@ Fixpoint typeT_tsubst (x : tident) (a t : typeT) :=
     end
   | funT t u =>
     funT (typeT_tsubst x a t) (typeT_tsubst x a u)
-  | t =>
+  | prodT t u =>
+    prodT (typeT_tsubst x a t) (typeT_tsubst x a u)
+  | _ =>
     t
   end.
 
@@ -42,6 +47,8 @@ Fixpoint typeT_par_tsubst (s : TMap.t typeT) (t : typeT) :=
     end
   | funT t u =>
     funT (typeT_par_tsubst s t) (typeT_par_tsubst s u)
-  | t =>
+  | prodT t u =>
+    prodT (typeT_par_tsubst s t) (typeT_par_tsubst s u)
+  | _ =>
     t
   end.

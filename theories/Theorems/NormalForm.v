@@ -144,24 +144,25 @@ Proof.
   - eauto using normal_form_sT.
 Qed.
 
-Lemma normal_form_type {e : termT} {t : typeT} :
+Lemma normal_form_type_no_context {e : termT} {t : typeT} :
     normal_form e ->
     |- e :T t ->
       match t with 
         | boolT => exists b : bool, e = bool_as_boolT b
         | natT => exists n : nat, e = nat_as_natT n
         | t ->T u => exists f : termT, e = absT f
+        | t *T u => exists f g : termT, e = pairT f g 
         | _ => True
       end.
 Proof.
   move: t.
   induction e;
   move=> t Hnf Htype;
-  inversion Htype.
+  inversion Htype;
+  eauto.
   - destruct (FMap.empty_1 H1). 
   - destruct n;
     discriminate H1.
-  - eauto.
   - destruct (IHe1 (t0 ->T t)).
   --- apply (normal_form_f_inv (r := fun e => appT e e2));
       eauto using one_reduction.
@@ -170,6 +171,22 @@ Proof.
       destruct Hnf.
       eexists.
       eauto using one_reduction.
+  - destruct (IHe (t *T u)) as [f [g Heq]].
+  --- apply (normal_form_f_inv (r := plT));
+      eauto using one_reduction.
+  --- assumption.
+  --- destruct Hnf.
+      rewrite Heq.
+      eexists.
+      eauto using one_reduction.
+  - destruct (IHe (t0 *T t)) as [f [g Heq]].
+  --- apply (normal_form_f_inv (r := prT));
+      eauto using one_reduction.
+  --- assumption.
+  --- destruct Hnf.
+      rewrite Heq.
+      eexists.
+      eauto using one_reduction. 
   - exists true.
     auto.
   - exists false.
@@ -201,4 +218,40 @@ Proof.
       destruct x;
       eexists;
       eauto using one_reduction.
+Qed.
+
+Lemma normal_form_boolT_no_context {e : termT} :
+    normal_form e ->
+    |- e :T boolT ->
+    exists b : bool, e = bool_as_boolT b.
+Proof.
+  move=> Hnf Hderiv.
+  exact (normal_form_type_no_context Hnf Hderiv).
+Qed.
+
+Lemma normal_form_natT_no_context {e : termT} :
+    normal_form e ->
+    |- e :T natT ->
+    exists n : nat, e = nat_as_natT n.
+Proof.
+  move=> Hnf Hderiv.
+  exact (normal_form_type_no_context Hnf Hderiv).
+Qed.
+
+Lemma normal_form_funT_no_context {t u : typeT} {e : termT} :
+    normal_form e ->
+    |- e :T t ->T u ->
+    exists f : termT, e = absT f.
+Proof.
+  move=> Hnf Hderiv.
+  exact (normal_form_type_no_context Hnf Hderiv).
+Qed.
+
+Lemma normal_form_prodT_no_context {t u : typeT} {e : termT} :
+    normal_form e ->
+    |- e :T t *T u ->
+    exists f g : termT, e = pairT f g.
+Proof.
+  move=> Hnf Hderiv.
+  exact (normal_form_type_no_context Hnf Hderiv).
 Qed.

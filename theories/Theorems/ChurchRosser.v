@@ -13,6 +13,12 @@ Inductive par_one_reduction : termT -> termT -> Prop :=
   | par_redex_beta : forall e f g h : termT,
     par_one_reduction e g -> par_one_reduction f h ->
     par_one_reduction (appT (absT e) f) (g[O <- h])
+  | par_redex_plT_pairT : forall e f g : termT,
+    par_one_reduction e g ->
+    par_one_reduction (plT (pairT e f)) g
+  | par_redex_prT_pairT : forall e f g : termT,
+    par_one_reduction f g ->
+    par_one_reduction (prT (pairT e f)) g
   | par_redex_iteT_trueT :
     forall e f g : termT,
     par_one_reduction e g ->
@@ -40,6 +46,19 @@ Inductive par_one_reduction : termT -> termT -> Prop :=
     par_one_reduction e g ->
     par_one_reduction f h ->
     par_one_reduction (appT e f) (appT g h)
+  | par_redind_pairT :
+    forall e f g h : termT,
+    par_one_reduction e g ->
+    par_one_reduction f h ->
+    par_one_reduction (pairT e f) (pairT g h)
+  | par_redind_plT :
+    forall e f : termT,
+    par_one_reduction e f ->
+    par_one_reduction (plT e) (plT f)
+  | par_redind_prT :
+    forall e f : termT,
+    par_one_reduction e f ->
+    par_one_reduction (prT e) (prT f)
   | par_redind_iteT :
     forall e f g h i j : termT,
     par_one_reduction e h ->
@@ -80,14 +99,12 @@ Proof.
   move: n.
   induction Hred1;
   move=> n;
+  simpl;
   eauto using par_one_reduction.
   - simpl.
     rewrite bshift_bsubst.
     lia.
     eapply par_redex_beta;
-    eauto.
-  - apply par_redex_recT_sT;
-    fold bshift;
     eauto.
 Qed.
 
@@ -97,6 +114,7 @@ Proof.
   intro Hred1.
   move: n f h.
   induction Hred1;
+  simpl;
   eauto using par_one_reduction.
   - induction e;
     move=> n' f' h' Hred2;
@@ -116,10 +134,6 @@ Proof.
       eauto using parallel_bsubst_bshift.
   --- apply IHHred1_2.
       assumption.
-  - move=> n' f' h' Hred2.
-    apply par_redex_recT_sT;
-    fold bsubst;
-    auto.
   - move=> n' f' h' Hred2.
     apply par_redind_absT;
     fold bsubst;
@@ -163,26 +177,40 @@ Proof.
         destruct Hj.
         exists (j[O <- i]);
         eauto using par_one_reduction, parallel_bsubst.
-  - inversion Hred2.
+  - inversion Hred2;
     eauto using par_one_reduction.
-  --- apply IHHred1.
-      exact H2.
-  --- destruct (IHHred1 i H4).
-      inversion H2.
-      destruct H6.
+    inversion H0.
+  --- exists g.
+      constructor;
       eauto using par_one_reduction.
-  - inversion Hred2.
+  --- destruct (IHHred1 g0 H4) as [i [Hredgi Hredg0i]].
+      exists i.
+      constructor;
+      eauto using par_one_reduction.
+  - inversion Hred2;
     eauto using par_one_reduction.
-  --- apply IHHred1.
-      exact H2.
-  --- destruct (IHHred1 j H5).
-      inversion H2.
-      destruct H6.
+    inversion H0.
+  --- exists g.
+      constructor;
       eauto using par_one_reduction.
-  - inversion Hred2.
-  --- eauto using par_one_reduction.
-  --- apply IHHred1.
-      exact H2.
+  --- destruct (IHHred1 h H6) as [i [Hredgi Hredhi]].
+      exists i.
+      constructor;
+      eauto using par_one_reduction.
+  - inversion Hred2;
+    eauto using par_one_reduction.
+    destruct (IHHred1 i H4).
+    inversion H2.
+    destruct H6.
+    eauto using par_one_reduction.
+  - inversion Hred2;
+    eauto using par_one_reduction.
+    destruct (IHHred1 j H5).
+    inversion H2.
+    destruct H6.
+    eauto using par_one_reduction.
+  - inversion Hred2;
+    eauto using par_one_reduction.
   --- inversion H5. 
       destruct (IHHred1 h H2).
       destruct H8.
@@ -237,6 +265,62 @@ Proof.
       destruct (IHHred1_2 h0 H3) as [l Hl].
       destruct Hk.
       destruct Hl.
+      eauto using par_one_reduction.
+  - inversion Hred2.
+  --- eauto using par_one_reduction.
+  --- destruct (IHHred1_1 g0 H1) as [i [Hredgi Hredg0i]].
+      destruct (IHHred1_2 h0 H3) as [j [Hredhj Hredh0j]].
+      exists (pairT i j).
+      eauto using par_one_reduction.
+  - inversion Hred2;
+    eauto using par_one_reduction.
+  --- destruct (IHHred1 (pairT g' f0)) as [i [Hredfi Hredpairi]].
+      rewrite <- H.
+      eauto using par_one_reduction.
+      inversion Hredpairi;
+      rewrite <- H in Hred1;
+      inversion Hred1.
+  ----- exists g'.
+        eauto using par_one_reduction.
+  ----- rewrite <- H7 in Hredfi.
+        rewrite <- H3 in Hredfi.
+        inversion Hredfi;
+        exists g';
+        eauto using par_one_reduction.
+  ----- exists g'.
+        eauto using par_one_reduction.
+  ----- rewrite <- H10 in Hredfi.
+        rewrite <- H5 in Hredfi.
+        inversion Hredfi;
+        exists g0;
+        eauto using par_one_reduction.
+  --- destruct (IHHred1 f0 H0) as [i [Hredfi Hredpairi]].
+      exists (plT i);
+      eauto using par_one_reduction.
+  - inversion Hred2;
+    eauto using par_one_reduction.
+  --- destruct (IHHred1 (pairT e0 g')) as [i [Hredfi Hredpairi]].
+      rewrite <- H.
+      eauto using par_one_reduction.
+      inversion Hredpairi;
+      rewrite <- H in Hred1;
+      inversion Hred1.
+  ----- exists g'.
+        eauto using par_one_reduction.
+  ----- rewrite <- H7 in Hredfi.
+        rewrite <- H3 in Hredfi.
+        inversion Hredfi;
+        exists g';
+        eauto using par_one_reduction.
+  ----- exists g'.
+        eauto using par_one_reduction.
+  ----- rewrite <- H10 in Hredfi.
+        rewrite <- H5 in Hredfi.
+        inversion Hredfi;
+        exists h;
+        eauto using par_one_reduction.
+  --- destruct (IHHred1 f0 H0) as [i [Hredfi Hredpairi]].
+      exists (prT i);
       eauto using par_one_reduction.
   - inversion Hred2.
   --- eauto using par_one_reduction.
@@ -370,6 +454,16 @@ Proof.
       eauto using one_reduction.
   --- apply reduction_star_bsubst;
       assumption.
+  - transitivity e.
+  --- exists 1.
+      rewrite <- one_reduction_reduction_1.
+      eauto using one_reduction.
+  --- assumption.
+  - transitivity f.
+  --- exists 1.
+      rewrite <- one_reduction_reduction_1.
+      eauto using one_reduction.
+  --- assumption.
   - transitivity e.
   --- exists 1.
       rewrite <- one_reduction_reduction_1.

@@ -43,6 +43,9 @@ Inductive termT :=
   | bvarT : nat -> termT
   | absT : termT -> termT
   | appT : termT -> termT -> termT
+  | pairT : termT -> termT -> termT
+  | plT : termT -> termT
+  | prT : termT -> termT
   | trueT : termT
   | falseT : termT
   | iteT : termT -> termT -> termT -> termT
@@ -89,6 +92,19 @@ Inductive bound_nclosed : nat -> termT -> Prop :=
     bound_nclosed n e ->
     bound_nclosed n f ->
     bound_nclosed n (appT e f)
+  | pairT_closed :
+    forall n : nat, forall e f : termT,
+    bound_nclosed n e ->
+    bound_nclosed n f ->
+    bound_nclosed n (pairT e f)
+  | plT_closed :
+    forall n : nat, forall e : termT,
+    bound_nclosed n e ->
+    bound_nclosed n (plT e)
+  | prT_closed :
+    forall n : nat, forall e : termT,
+    bound_nclosed n e ->
+    bound_nclosed n (prT e)
   | trueT_closed :
     forall n : nat, bound_nclosed n trueT
   | falseT_closed :
@@ -126,11 +142,14 @@ Lemma bound_nclosed_decidable (e : termT) :
     forall n : nat, decidable (bound_nclosed n e).
 Proof.
   induction e;
-  intro m;
-  [ |
+  intro m; [
+    |
     destruct (lt_dec n m) |
     destruct (IHe (S m)) |
-    destruct (IHe1 m); destruct (IHe2 m) | | |
+    destruct (IHe1 m); destruct (IHe2 m) |
+    destruct (IHe1 m); destruct (IHe2 m) |
+    destruct (IHe m) |
+    destruct (IHe m) | | |
     destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) | | 
     destruct (IHe m) |
     destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m)
@@ -160,6 +179,10 @@ Fixpoint bshift (n : nat) (e : termT) :=
   | absT e => absT (bshift (S n) e)
   | appT e f =>
     appT (bshift n e) (bshift n f)
+  | pairT e f =>
+    pairT (bshift n e) (bshift n f)
+  | plT e => plT (bshift n e)
+  | prT e => prT (bshift n e)
   | sT e => sT (bshift n e)
   | iteT e f g =>
     iteT
@@ -198,6 +221,10 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   | absT e => absT (bsubst (S n) e (bshift O a))
   | appT e f =>
     appT (bsubst n e a) (bsubst n f a)
+  | pairT e f =>
+    pairT (bsubst n e a) (bsubst n f a)
+  | plT e => plT (bsubst n e a)
+  | prT e => prT (bsubst n e a)
   | sT e => sT (bsubst n e a)
   | iteT e f g =>
     iteT
@@ -224,6 +251,10 @@ Fixpoint par_bsubst (n : nat) (s : list termT) (e : termT) :=
     (List.map (bshift O) s) e)
   | appT e f =>
     appT (par_bsubst n s e) (par_bsubst n s f)
+  | pairT e f =>
+    pairT (par_bsubst n s e) (par_bsubst n s f)
+  | plT e => plT (par_bsubst n s e)
+  | prT e => prT (par_bsubst n s e)
   | sT e => sT (par_bsubst n s e)
   | iteT e f g =>
     iteT
@@ -258,6 +289,10 @@ Fixpoint fsubst (x : fident) (e a : termT) :=
   | absT e => absT (fsubst x e (bshift O a))
   | appT e f =>
     appT (fsubst x e a) (fsubst x f a)
+  | pairT e f =>
+    pairT (fsubst x e a) (fsubst x f a)
+  | plT e => plT (fsubst x e a)
+  | prT e => prT (fsubst x e a)
   | sT e => sT (fsubst x e a)
   | iteT e f g =>
     iteT
@@ -282,6 +317,10 @@ Fixpoint par_fsubst (s : FMap.t termT) (e : termT) :=
   | absT e => absT (par_fsubst (FMap.map (bshift O) s) e)
   | appT e f =>
     appT (par_fsubst s e) (par_fsubst s f)
+  | pairT e f =>
+    pairT (par_fsubst s e) (par_fsubst s f)
+  | plT e => plT (par_fsubst s e)
+  | prT e => prT (par_fsubst s e)
   | sT e => sT (par_fsubst s e)
   | iteT e f g =>
     iteT

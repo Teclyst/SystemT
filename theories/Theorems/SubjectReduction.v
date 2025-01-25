@@ -379,6 +379,10 @@ Proof.
   - inversion H2.
     eapply derivation_bsubst;
     eauto using binsert_0_bpush.
+  - inversion H1.
+    eauto using derivation.
+  - inversion H1.
+    eauto using derivation.  
   - inversion H6.
     eauto using derivation.
 Qed.

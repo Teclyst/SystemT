@@ -116,6 +116,10 @@ Fixpoint reducibility_candidate (t : typeT) : termT -> Prop :=
       forall f : termT,
       reducibility_candidate t f ->
       reducibility_candidate u (appT e f)
+  | prodT t u =>
+    fun e =>
+      reducibility_candidate t (plT e) /\
+      reducibility_candidate u (prT e)
   | _ =>
     strongly_normalizing
   end.
@@ -134,6 +138,8 @@ Proof.
   - move=> g Hredug.
     apply (IHt2 (appT e g));
     auto using one_reduction.
+  - destruct Hredue as [Hreduple Hredupre];
+    eauto 6 using one_reduction.
 Qed.
 
 Lemma reducibility_candidate_reduction {t : typeT} {e f : termT} {n : nat} :
@@ -156,6 +162,8 @@ Inductive neutral : termT -> Prop :=
   | neutral_fvarT : forall f : fident, neutral (fvarT f)
   | neutral_bvarT : forall n : nat, neutral (bvarT n)
   | neutral_appT : forall e f : termT, neutral (appT e f)
+  | neutral_plT : forall e : termT, neutral (plT e)
+  | neutral_prT : forall e : termT, neutral (prT e)
   | neutral_iteT : forall e f g : termT, neutral (iteT e f g)
   | neutral_recT : forall e f g : termT, neutral (recT e f g).
 
@@ -175,44 +183,68 @@ Proof.
     move=> e _ HAcc;
     constructor;
     assumption  
-  ).
-  destruct IHt1 as [IHt11 IHt13].
+  );
+  destruct IHt1 as [IHt11 IHt13];
   destruct IHt2 as [IHt21 IHt23].
-  constructor.
-  - move=> e Hredu.
-    have bar : reducibility_candidate t1 (bvarT O).
-    (*
-      The choice of [bvarT O] is completely arbitrary.
-      We only need the fact that [reducibility_candidate t1] is
-      non-empty. This is the case because it contains [bvarT O],
-      by (CR3).
-    *)
-  --- apply IHt13.
+  - constructor.
+  --- move=> e Hredu.
+      have bar : reducibility_candidate t1 (bvarT O).
+      (*
+        The choice of [bvarT O] is completely arbitrary.
+        We only need the fact that [reducibility_candidate t1] is
+        non-empty. This is the case because it contains [bvarT O],
+        by (CR3).
+      *)
+  ----- apply IHt13.
+  ------- eauto using neutral.
+  ------- move=> f Hred.
+          inversion Hred.
+  ----- eapply (strongly_normalizing_f_inv (r := fun e => appT e _)).
+  ------- eauto using one_reduction.
+  ------- eapply IHt21.
+          simpl in Hredu.
+          apply (Hredu (bvarT O)).
+          assumption.
+  --- simpl.
+      move=> e Hneut Hforall f Hreduf.
+      have HAcc := IHt11 f Hreduf.
+      induction HAcc.
+      apply IHt23.
   ----- eauto using neutral.
   ----- move=> f Hred.
         inversion Hred.
-  --- eapply (strongly_normalizing_f_inv (r := fun e => appT e _)).
-  ----- eauto using one_reduction.
-  ----- eapply IHt21.
-        simpl in Hredu.
-        apply (Hredu (bvarT O)).
-        assumption.
-  - simpl.
-    move=> e Hneut Hforall f Hreduf.
-    have HAcc := IHt11 f Hreduf.
-    induction HAcc.
-    apply IHt23.
-  --- eauto using neutral.
-  --- move=> f Hred.
-      inversion Hred.
-  ----- rewrite <- H2 in Hneut.
-        inversion Hneut.
-  ----- apply Hforall;
-        auto.
-  ----- apply H0;
-        auto.
-        apply (reducibility_candidate_cr2 (e := x));
-        assumption.
+  ------- rewrite <- H2 in Hneut.
+          inversion Hneut.
+  ------- apply Hforall;
+          auto.
+  ------- apply H0;
+          auto.
+          apply (reducibility_candidate_cr2 (e := x));
+          assumption.
+  - constructor.
+  --- simpl.
+      move=> e [Hreduple Hredupre].
+      apply (strongly_normalizing_f_inv (r := plT));
+      eauto using one_reduction.
+  --- simpl.
+      move=> e Hneut Hforall.
+      constructor.
+  ----- apply IHt13.
+  ------- eauto using neutral.
+  ------- move=> f Hred.
+          inversion Hred.
+  --------- rewrite <- H0 in Hneut.
+            inversion Hneut.
+  --------- destruct (Hforall f0 H0).
+            assumption.
+  ----- apply IHt23.
+  ------- eauto using neutral.
+  ------- move=> f Hred.
+          inversion Hred.
+  --------- rewrite <- H0 in Hneut.
+            inversion Hneut.
+  --------- destruct (Hforall f0 H0).
+            assumption.
 Qed.
 
 Lemma reducibility_candidate_cr1 {t : typeT} {e : termT} :
@@ -297,6 +329,77 @@ Lemma reducibility_candidate_appT {t u : typeT} {e f : termT} :
     reducibility_candidate u (appT e f).
 Proof.
   eauto.
+Qed.
+
+Lemma reducibility_candidate_pairT {t u : typeT} {e f : termT} :
+    reducibility_candidate t e ->
+    reducibility_candidate u f ->
+    reducibility_candidate (t *T u) (pairT e f).
+Proof.
+  move=> Hredue.
+  move: f.
+  have Hsn := reducibility_candidate_cr1 Hredue.
+  induction Hsn as [e _ Hinde].
+  move=> f Hreduf.
+  have Hsn := reducibility_candidate_cr1 Hreduf.
+  induction Hsn as [f _ Hindf];
+  constructor;
+  apply reducibility_candidate_cr3;
+  eauto using neutral.
+  - move=> g Hredg.
+    inversion Hredg.
+  --- rewrite <- H2.
+      assumption.
+  --- inversion H0.
+  ----- simpl in Hinde.
+        destruct (
+          Hinde f1 H5
+            (reducibility_candidate_cr2 H5 Hredue)
+            f Hreduf
+        ).
+        assumption.
+  ----- simpl in Hindf.
+        destruct (
+          Hindf g0 H5
+            (reducibility_candidate_cr2 H5 Hreduf)
+        ).
+        assumption.
+  - move=> g Hredg.
+    inversion Hredg.
+  --- rewrite <- H2.
+      assumption.
+  --- inversion H0.
+  ----- simpl in Hinde.
+        destruct (
+          Hinde f1 H5
+            (reducibility_candidate_cr2 H5 Hredue)
+            f Hreduf
+        ).
+        assumption.
+  ----- simpl in Hindf.
+        destruct (
+          Hindf g0 H5
+            (reducibility_candidate_cr2 H5 Hreduf)
+        ).
+        assumption.
+Qed.
+
+Lemma reducibility_candidate_plT {t u : typeT} {e : termT} :
+    reducibility_candidate (t *T u) e ->
+    reducibility_candidate t (plT e).
+Proof.
+  simpl.
+  move=> [Hredu _].
+  assumption.
+Qed.
+
+Lemma reducibility_candidate_prT {t u : typeT} {e : termT} :
+    reducibility_candidate (t *T u) e ->
+    reducibility_candidate u (prT e).
+Proof.
+  simpl.
+  move=> [_ Hredu].
+  assumption.
 Qed.
 
 Lemma reducibility_candidate_falseT :
@@ -463,6 +566,9 @@ Hint Resolve
   reducibility_candidate_bvarT
   reducibility_candidate_absT
   reducibility_candidate_appT
+  reducibility_candidate_pairT
+  reducibility_candidate_plT
+  reducibility_candidate_prT
   reducibility_candidate_falseT
   reducibility_candidate_trueT
   reducibility_candidate_iteT
@@ -484,6 +590,7 @@ Proof.
   move=> s Hmap;
   eauto with reducibility_candidate_lemmas;
   simpl;
+  try constructor;
   eauto with reducibility_candidate_lemmas.
   - rewrite Nat.sub_0_r.
     destruct (List.nth_error s n) as [u | ] eqn:Heq.

@@ -49,6 +49,12 @@ Definition addT : termT :=
       (absT (absT (sT (bvarT (S O)))))
       (bvarT (S O)))).
 
+Definition currify :=
+  absT (absT (absT
+    (appT
+      (bvarT (S (S O)))
+      (pairT (bvarT (S O)) (bvarT O))))).
+
 Lemma type_idT {t : typeT} :
     |- idT :T t ->T t.
 Proof.
@@ -130,6 +136,25 @@ Proof.
   unfold Context.bMapsTo;
   simpl;
   reflexivity.
+Qed.
+
+Lemma type_currify {t u v : typeT} :
+    |- currify :T (t *T u ->T v) ->T t ->T u ->T v.
+Proof.
+  unfold currify.
+  repeat apply absT_in.
+  unfold Context.bpush;
+  simpl.
+  apply (appT_el _ _ _ (t *T u)).
+  - apply bvarT_ax.
+    unfold Context.bMapsTo.
+    simpl.
+    reflexivity.
+  - apply pairT_in;
+    apply bvarT_ax;
+    unfold Context.bMapsTo;
+    simpl;
+    reflexivity.
 Qed.
 
 Lemma idT_one_reduction {e : termT} : appT idT e ->1 e.

@@ -119,6 +119,42 @@ Proof.
     eauto using reduction.
 Qed.
 
+Lemma reduction_pairT {e f g h : termT} {m n : nat} :
+    (e ->(m) g) -> (f ->(n) h) -> (pairT e f ->(m + n) pairT g h).
+Proof.
+  intro Hred1.
+  move: f h.
+  induction Hred1; simpl; move=> f' h' Hred2.
+  - move: e.
+    induction Hred2.
+  --- eauto using reduction.
+  --- intro h.
+      apply (redind_pairT_r h) in H.
+      eauto using reduction. 
+  - apply (redind_pairT_l _ _ f') in H.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_plT {e f : termT} {n : nat} :
+    (e ->(n) f) -> (plT e ->(n) plT f).
+Proof.
+  intro Hred.
+  induction Hred.
+  - eauto using reduction.
+  - apply redind_plT in H.
+    eauto using reduction.
+Qed.
+
+Lemma reduction_prT {e f : termT} {n : nat} :
+    (e ->(n) f) -> (prT e ->(n) prT f).
+Proof.
+  intro Hred.
+  induction Hred.
+  - eauto using reduction.
+  - apply redind_prT in H.
+    eauto using reduction.
+Qed.
+
 Lemma reduction_iteT {e f g h i j : termT} {m n o : nat} :
     (e ->(m) h) -> (f ->(n) i) -> (g ->(o) j) ->
     (iteT e f g ->(m + n + o) iteT h i j).
@@ -198,6 +234,34 @@ Proof.
   eauto using reduction_appT.
 Qed.
 
+Lemma reduction_star_pairT {e f g h : termT} :
+    (e ->* g) -> (f ->* h) -> (pairT e f ->* pairT g h).
+Proof.
+  intros Hred1 Hred2.
+  destruct Hred1 as [o Ho].
+  destruct Hred2 as [p Hp].
+  exists (o + p).
+  eauto using reduction_pairT.
+Qed.
+
+Lemma reduction_star_plT {e f : termT} :
+    (e ->* f) -> (plT e ->* plT f).
+Proof.
+  intro Hred.
+  destruct Hred as [m Hm].
+  exists m.
+  eauto using reduction_plT.
+Qed.
+
+Lemma reduction_star_prT {e f : termT} :
+    (e ->* f) -> (prT e ->* prT f).
+Proof.
+  intro Hred.
+  destruct Hred as [m Hm].
+  exists m.
+  eauto using reduction_prT.
+Qed.
+
 Lemma reduction_star_iteT {e f g h i j : termT} :
     (e ->* h) -> (f ->* i) -> (g ->* j) -> (iteT e f g ->* iteT h i j).
 Proof.
@@ -234,6 +298,9 @@ Hint Resolve
   one_reduction_reduction_star
   reduction_star_absT
   reduction_star_appT
+  reduction_star_pairT
+  reduction_star_plT
+  reduction_star_prT
   reduction_star_iteT
   reduction_star_sT
   reduction_star_recT : reduction_star_lemmas.
@@ -245,12 +312,11 @@ Proof.
   move: g n.
   induction Hred;
   move=> g' n;
+  simpl;
   eauto using one_reduction.
   - rewrite bsubst_bsubst.
     lia.
     apply redex_beta.
-  - simpl.
-    eauto using one_reduction.
 Qed.
 
 Lemma bshift_one_reduction {e f: termT} {n : nat} :
@@ -407,6 +473,74 @@ Proof.
         eexists;
         eauto using one_reduction
       ]).
+  - simpl;
+    inversion IHe1;
+    inversion IHe2;
+    simpl.
+  --- left.
+      destruct H0 as [f Hred].
+      exists (pairT f e2).
+      auto using one_reduction.
+  --- left.
+      destruct H0 as [f Hred].
+      exists (pairT f e2).
+      auto using one_reduction.
+  --- left.
+      destruct H2 as [f Hred].
+      exists (pairT e1 f).
+      auto using one_reduction.
+  --- right.
+      intro Hredible.
+      destruct Hredible as [f Hred].
+      inversion Hred.
+  ----- apply H0. 
+        exists f0.
+        auto.
+  ----- apply H2. 
+        exists g.
+        auto.
+  - simpl.
+    inversion IHe. 
+  --- destruct e;
+      left;
+      destruct H0 as [h Hred];
+      exists (plT h);
+      auto using one_reduction.
+  --- destruct e;
+      try (
+        right;
+        move=> Hredible;
+        destruct Hredible as [h Hred];
+        inversion Hred;
+        apply H0;
+        try exists f0;
+        try exists f;
+        auto
+      ).
+      left.
+      exists e1.
+      auto using one_reduction.
+  - simpl.
+    inversion IHe. 
+  --- destruct e;
+      left;
+      destruct H0 as [h Hred];
+      exists (prT h);
+      auto using one_reduction.
+  --- destruct e;
+      try (
+        right;
+        move=> Hredible;
+        destruct Hredible as [h Hred];
+        inversion Hred;
+        apply H0;
+        try exists f0;
+        try exists f;
+        auto
+      ).
+      left.
+      exists e2.
+      auto using one_reduction.
   - right.
     intro H.
     destruct H as [g Hred].

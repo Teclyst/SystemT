@@ -27,6 +27,19 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
     derivation G e (t ->T u) ->
     derivation G f t ->
     derivation G (appT e f) u
+  | pairT_in :
+    forall G : Context.t, forall e f : termT, forall t u : typeT,
+    derivation G e t ->
+    derivation G f u ->
+    derivation G (pairT e f) (t *T u)
+  | plT_el :
+    forall G : Context.t, forall e : termT, forall t u : typeT,
+    derivation G e (t *T u) ->
+    derivation G (plT e) t
+  | prT_el :
+    forall G : Context.t, forall e : termT, forall t u : typeT,
+    derivation G e (t *T u) ->
+    derivation G (prT e) u
   | trueT_ax :
     forall G : Context.t, derivation G trueT boolT
   | falseT_ax :
