@@ -670,17 +670,149 @@ Proof.
   induction e;
   simpl;
   move=> g Heq;
-  try discriminate Heq.
-  - destruct (left_reduce e) as [f | ];
-    try discriminate Heq.
-    simpl in Heq.
-    inversion Heq.
+  try discriminate Heq;
+  try (
+    destruct e;
+    destruct left_reduce eqn:Heq1;
+    try discriminate Heq;
+    inversion Heq;
+    eauto using one_reduction;
+    fail
+  );
+  try (
+    destruct e1;
+    destruct left_reduce eqn:Heq1;
+    destruct (left_reduce e2) eqn:Heq2;
+    try discriminate Heq1;
+    inversion Heq;
+    symmetry in Heq2;
+    eauto using one_reduction;
+    fail
+  ).
+  - destruct e1;
+    destruct left_reduce eqn:Heq1;
+    destruct (left_reduce e2) eqn:Heq2;
+    destruct (left_reduce e3) eqn:Heq3;
+    inversion Heq;
     eauto using one_reduction.
-Admitted.
+  - destruct (left_reduce e3) eqn:Heq3;
+    destruct e3;
+    destruct (left_reduce e1) eqn:Heq1;
+    destruct (left_reduce e2) eqn:Heq2;
+    inversion Heq;
+    eauto using one_reduction.
+Qed.
+
+Definition option_as_bool {A : Type} (opt : option A) :=
+  match opt with
+  | Some a => true
+  | _ => false
+  end.
+
+Lemma left_reduce_reducibleb {e : termT} :
+    option_as_bool (left_reduce e) = reducibleb e.
+Proof.
+  induction e;
+  simpl;
+  try reflexivity;
+  try (
+    destruct (left_reduce e);
+    simpl in IHe;
+    rewrite <- IHe
+  );
+  try (
+    destruct (left_reduce e1);
+    simpl in IHe1;
+    rewrite <- IHe1
+  );
+  try (
+    destruct (left_reduce e2);
+    simpl in IHe2;
+    rewrite <- IHe2
+  );
+  try (
+    destruct (left_reduce e3);
+    simpl in IHe3;
+    rewrite <- IHe3
+  );
+  try (
+    destruct e;
+    auto;
+    fail
+  );
+  try (
+    destruct e1;
+    auto;
+    fail
+  );
+  try (
+    destruct e3;
+    auto;
+    fail
+  ).
+Qed.
 
 Lemma left_reduce_reducible {e : termT} :
     reducible e -> exists f : termT, left_reduce e = Some f.
-Admitted.
+Proof.
+  move=> Hredible.
+  move/ reducibleb_spec in Hredible.
+  rewrite <- left_reduce_reducibleb in Hredible.
+  destruct (left_reduce e).
+  - eauto.
+  - inversion Hredible.
+Qed.  
+
+Inductive option_eq (opt : option termT) :=
+  | option_eq_Some : forall x, opt = Some x -> option_eq opt
+  | option_eq_None : opt = None -> option_eq opt.
+
+Lemma option_as_option_eq (opt : option termT) :
+    option_eq opt.
+Proof.
+  destruct opt;
+  eauto using option_eq.
+Qed.
+
+(* match x as x0 return foo_type x0 -> bool with *)
+    (* | constructor A f => fun y => f y *)
+    (* end y. *)
+
+Fixpoint reduce (e : termT) (Hsn : strongly_normalizing e)
+  {struct Hsn} :=
+  match (option_as_option_eq (left_reduce e)) with
+  | option_eq_Some _ f Heq =>
+    reduce f
+      (Acc_inv Hsn (left_reduce_spec Heq))
+  | _ => e
+  end.
+
+Lemma reduce_reduction_star {e : termT}
+  {Hsn : strongly_normalizing e} :
+    e ->* reduce e Hsn.
+Proof.
+  have Hsn2 := Hsn.
+  (* We want to prove it by induction on [Hsn], but we can't! *)
+  (* Indeed, the type of [Hsn] depends on [e]. *)
+  (* To solve this issue, we do the induction on another *)
+  (* proof of strong normalization. *)
+  (* This isn't an issue because [reduce] does not really *)
+  (* depend on its second argument (that is only there to *)
+  (* ensure termination. *)
+  induction Hsn2 as [e _ Hind].
+  destruct Hsn as [Hacc].
+  unfold reduce.
+  simpl.
+  destruct (option_as_option_eq (left_reduce e)) as [f Heq | ].
+  - fold reduce.
+    eapply red_star_next.
+  --- apply left_reduce_spec.
+      exact Heq.
+  --- apply Hind.
+      apply left_reduce_spec.
+      exact Heq.
+  - reflexivity.
+Qed.
 
 Lemma one_reduction_par_fsubst {e f : termT} {s : FMap.t termT} :
     (e ->1 f) -> (par_fsubst s e ->1 par_fsubst s f).

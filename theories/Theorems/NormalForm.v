@@ -255,3 +255,20 @@ Proof.
   move=> Hnf Hderiv.
   exact (normal_form_type_no_context Hnf Hderiv).
 Qed.
+
+Lemma normal_form_reduce {e : termT}
+  {Hsn : strongly_normalizing e} :
+    normal_form (reduce e Hsn).
+Proof.
+  have Hsn2 := Hsn.
+  induction Hsn2 as [e _ Hind].
+  unfold reduce.
+  destruct Hsn as [Hacc].
+  destruct (option_as_option_eq (left_reduce e)) as [f Heq | HeqNone].
+  - apply Hind.
+    exact (left_reduce_spec Heq).
+  - move=> Hredible.
+    destruct (left_reduce_reducible Hredible) as [f HeqSome].
+    rewrite HeqNone in HeqSome.
+    inversion HeqSome.
+Qed.
