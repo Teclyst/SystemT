@@ -1,2 +1,2 @@
--R theories SystemT
-theories
+-R _build/default/theories SystemT
+_build/defualt/theories

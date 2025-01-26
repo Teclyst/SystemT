@@ -1,10 +1,2 @@
 *.pdf
-*.vo
-*.d
-*.vok
-*.vos
-*.glob
-*.aux
-*.cache
-CoqMakefile*
-documentation
+_build

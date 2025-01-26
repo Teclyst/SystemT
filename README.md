@@ -1,4 +1,4 @@
-# System-T
+# SystemT
 
 ## Overview
 
@@ -11,25 +11,27 @@ In particular, the main goal of this project is to prove strong normalization fo
 - To build all _Coq_ files, run
 
   ```{bash}
-  make
+  dune build
   ```
 
 - To build documentation, run
 
   ```{bash}
-  make build-doc
+  dune build @doc
   ```
 
-  A `documentation` directory will then be created with `html` formatted versions of the source files.
+  `html` files will be produced, in subdirectory `_build/default/theories/SystemT.html`.
 
-- To do build both source files and documentation, run
+- To build $\LaTeX$ documentation, run
 
   ```{bash}
-  make all
+  dune build @doc-latex
   ```
+
+  `tex` files will be produced, in subdirectory `_build/default/theories/SystemT.tex`.
 
 - To delete all build files, run
 
   ```{bash}
-  make clean
+  dune clean
   ```
