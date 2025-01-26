@@ -15,7 +15,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma fMapsTo_fun {x : fident} {u v : typeT} {G : t} :
+Lemma fMapsTo_fun {x : FIdent.t} {u v : typeT} {G : t} :
     fMapsTo x u G -> fMapsTo x v G -> u = v.
 Proof.
   exact (@FMapFacts.MapsTo_fun _ _ _ _ _).

@@ -504,7 +504,7 @@ Proof.
   try f_equal;
   eauto.
   - rewrite FMapFacts.map_o.
-    destruct (FMap.find f s);
+    destruct (FMap.find k s);
     reflexivity.
   - destruct (PeanoNat.Nat.leb m n);
     reflexivity.
@@ -525,10 +525,10 @@ Proof.
     auto;
     fail
   ).
-  - destruct (FMap.find f s) eqn:Heq.
+  - destruct (FMap.find k s) eqn:Heq.
   --- rewrite (FMap.find_1 (FMap.map_1 (bshift m) (FMap.find_2 Heq))).
       exact bshift_bsubst_eq.
-  --- have foo : FMap.find f (FMap.map (bshift m) s) = None.
+  --- have foo : FMap.find k (FMap.map (bshift m) s) = None.
       rewrite FMapFacts.map_o.
       rewrite Heq.
       reflexivity.

@@ -12,7 +12,7 @@ Record t := {
 Definition bMapsTo (n : nat) (u : typeT) (G : t) : Prop :=
   nth_error (Context.bmap G) n = Some u.
   
-Definition fMapsTo (x : fident) (u : typeT) (G : t) : Prop :=
+Definition fMapsTo (x : FIdent.t) (u : typeT) (G : t) : Prop :=
   FMap.MapsTo x u (Context.fmap G).
 
 Definition empty : t := {|

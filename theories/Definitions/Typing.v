@@ -15,7 +15,7 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
     Context.bMapsTo n t G ->
     derivation G (bvarT n) t
   | fvarT_ax :
-    forall G : Context.t, forall x : fident, forall t : typeT,
+    forall G : Context.t, forall x : FIdent.t, forall t : typeT,
     Context.fMapsTo x t G ->
     derivation G (fvarT x) t
   | absT_in :

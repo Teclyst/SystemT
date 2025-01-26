@@ -1,0 +1,5 @@
+profile = ocamlformat
+version = 0.27.0
+
+break-cases = fit-or-vertical
+cases-matching-exp-indent = normal

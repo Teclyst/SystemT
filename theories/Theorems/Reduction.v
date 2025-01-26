@@ -763,16 +763,16 @@ Proof.
   - inversion Hredible.
 Qed.  
 
-Inductive option_eq (opt : option termT) :=
+Inductive option_eq {A : Type} (opt : option A) :=
   | option_eq_Some : forall x, opt = Some x -> option_eq opt
   | option_eq_None : opt = None -> option_eq opt.
 
-Lemma option_as_option_eq (opt : option termT) :
-    option_eq opt.
-Proof.
-  destruct opt;
-  eauto using option_eq.
-Qed.
+Definition option_as_option_eq {A : Type} (opt : option A) :
+    option_eq opt :=
+  match opt with
+  | Some x => option_eq_Some (Some x) x (eq_refl (Some x))
+  | None => option_eq_None None (eq_refl None)
+  end.
 
 (* match x as x0 return foo_type x0 -> bool with *)
     (* | constructor A f => fun y => f y *)

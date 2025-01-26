@@ -1,0 +1,16 @@
+(include_subdirs qualified)
+
+(coq.extraction
+ (prelude Interpreter)
+ (extracted_modules coqInterpreter)
+ (theories SystemT))
+
+(executable
+ (name interpreter)
+ (modules interpreter pretty coqInterpreter)
+ (libraries zarith))
+
+(env
+ (dev
+  (flags
+   (:standard -warn-error -A))))

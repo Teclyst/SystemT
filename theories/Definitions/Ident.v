@@ -16,7 +16,7 @@ Module Type IDENTfun (Map : S).
   Axiom new_spec :
       forall elt : Type, forall s : Map.t elt,
       ~ Map.In (new elt s) s.
-      
+
 End IDENTfun.
 
 Module Type IDENT.
@@ -50,13 +50,19 @@ Module IdentFacts (Import Ident : IDENT).
 
 End IdentFacts.
 
-Module NatMap :=
-  FMapList.Make (Structures.OrderedTypeEx.Nat_as_OT).
+Module Nat_as_OT := Structures.OrderedTypeEx.Nat_as_OT.
+
+Module NatMap : S
+  with Definition E.t := nat
+  with Definition E.eq := @eq nat :=
+  FMapList.Make (Nat_as_OT).
 
 Module NatIdent <: IDENT.
 
   Module Map := NatMap.
-  
+
+  Notation t := Map.key.
+
   Definition eqb := Nat.eqb.
 
   Infix "=?" := eqb (at level 70).
@@ -111,7 +117,9 @@ Module NatIdent <: IDENT.
 
 End NatIdent.
 
-Module StringMap :=
+Module StringMap : S
+  with Definition E.t := string
+  with Definition E.eq := @eq string :=
   FMapList.Make (Structures.OrderedTypeEx.String_as_OT).
 
 Module StringIdent <: IDENT.
@@ -119,6 +127,8 @@ Module StringIdent <: IDENT.
   Open Scope string_scope.
 
   Module Map := StringMap.
+
+  Notation t := Map.key.
   
   Definition eqb := String.eqb.
 

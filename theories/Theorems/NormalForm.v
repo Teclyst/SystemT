@@ -52,7 +52,7 @@ Proof.
   - assumption.  
 Qed.
 
-Lemma normal_form_fvarT {f : fident} :
+Lemma normal_form_fvarT {f : FIdent.t} :
     normal_form (fvarT f).
 Proof.
   intro Hred.

@@ -18,20 +18,16 @@ Open Scope system_t_term_scope.
 (** ** Terms
 *)
 
-Declare Module FIdent : IDENT.
+Module FIdent <: IDENT := StringIdent.
 
 Module FIdentFacts := IdentFacts FIdent.
-
-(** [idenT] is the label type for free variables.
-*)
-Definition fident := FIdent.t.
 
 (** [termT] is the [Type] representing the terms of System-T.
 
     Free variables are distinguished from bound variables, to avoid
     alpha-conversion issues.
 
-    Free variables are labeled with [fident] values.
+    Free variables are labeled with [FIdent.t] values.
 
     Bound variables are represented by de Bruijn indexes. Because of
     that, a [termT] may correspond to something that is not a real
@@ -39,7 +35,7 @@ Definition fident := FIdent.t.
     nonexistant lambdas.
 *)
 Inductive termT :=
-  | fvarT : fident -> termT
+  | fvarT : FIdent.t -> termT
   | bvarT : nat -> termT
   | absT : termT -> termT
   | appT : termT -> termT -> termT
@@ -78,7 +74,7 @@ Fixpoint nat_as_natT (n : nat) : termT :=
 *)
 Inductive bound_nclosed : nat -> termT -> Prop :=
   | fvarT_closed :
-    forall n : nat, forall x : fident,
+    forall n : nat, forall x : FIdent.t,
     bound_nclosed n (fvarT x)
   | bvarT_closed :
     forall n x : nat, x < n ->
@@ -279,7 +275,7 @@ Module FMapFacts := Coq.FSets.FMapFacts.WFacts FMap.
     variable bound by the lambda at height [n] above the root are
     replaced by [a].
 *)
-Fixpoint fsubst (x : fident) (e a : termT) :=
+Fixpoint fsubst (x : FIdent.t) (e a : termT) :=
   match e with
   | fvarT y =>
     match FIdentFacts.eqb x y with

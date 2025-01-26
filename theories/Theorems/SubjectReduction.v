@@ -317,7 +317,7 @@ Proof.
   auto.
 Qed.
 
-Lemma binsert_fMapsTo {n : nat} {G H : Context.t} {t u : typeT} {x : fident} :
+Lemma binsert_fMapsTo {n : nat} {G H : Context.t} {t u : typeT} {x : FIdent.t} :
     binsert n t G = Some H ->
     Context.fMapsTo x u G <-> Context.fMapsTo x u H.
 Proof.

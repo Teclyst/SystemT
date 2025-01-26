@@ -159,7 +159,7 @@ Proof.
 Qed.    
 
 Inductive neutral : termT -> Prop :=
-  | neutral_fvarT : forall f : fident, neutral (fvarT f)
+  | neutral_fvarT : forall f : FIdent.t, neutral (fvarT f)
   | neutral_bvarT : forall n : nat, neutral (bvarT n)
   | neutral_appT : forall e f : termT, neutral (appT e f)
   | neutral_plT : forall e : termT, neutral (plT e)
@@ -275,7 +275,7 @@ Proof.
     eauto. 
 Qed.
 
-Lemma reducibility_candidate_fvarT {t : typeT} {x : fident} :
+Lemma reducibility_candidate_fvarT {t : typeT} {x : FIdent.t} :
     reducibility_candidate t (fvarT x).
 Proof.
   apply reducibility_candidate_normal_form.
