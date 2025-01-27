@@ -4,6 +4,9 @@ Require Import Definitions.Term.
 Require Import Definitions.Reduction.
 Require Import Definitions.Typing.
 Require Import Theorems.Reduction.
+Require Import Definitions.Context.
+Require Import Theorems.Context.
+Require Import Theorems.Type.
 
 Require Import PeanoNat.
 Require Import List.
@@ -13,27 +16,35 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
 
-(** Given a type substitution and a typing derivation, applying
-    that substitution to the context and all types appearing in the
-    derivation yields a new derivation.
-*)
-Lemma derivation_par_tsubst
-  {G : Context.t} {e : termT} {t : typeT} {s : TMap.t typeT} :
+Lemma derivation_par_tsubst_preorder_with_tsubst
+  {G H : Context.t} {e : termT} {t : typeT} {s : TMap.t typeT} :
+    G <|(s) H ->
     G |- e :T t ->
-    Context.context_par_tsubst s G |- e :T typeT_par_tsubst s t.
+    H |- e :T par_tsubst s t.
 Proof.
-  intro D.
+  move=> [Hbmap Hfmap] D.
+  move: H Hbmap Hfmap.
   induction D;
   eauto using derivation;
   simpl.
-  - apply bvarT_ax.
-    simpl.
-    apply List.map_nth_error.
-    exact H.
-  - apply fvarT_ax.
-    simpl.
-    apply FMap.map_1.
-    exact H.
+  move=> H Hbmap Hfmap.
+  apply absT_in.
+  have Htsubst : G <|(s) H.
+  constructor;
+  auto.
+  rewrite (context_tsubst_preorder_with_tsubst_bpush (t := t)) in Htsubst.
+  destruct Htsubst as [Hbmap2 Hfmap2].
+  apply IHD;
+  assumption.
+Qed.
+
+Lemma derivation_no_context_derivation
+  {G : Context.t} {e : termT} {t : typeT} :
+    |- e :T t -> G |- e :T t.
+Proof.
+  rewrite <- (par_tsubst_empty (@TMap.empty_1 _)) at -1.
+  apply derivation_par_tsubst_preorder_with_tsubst.
+  exact empty_context_tsubst_preorder_with_tsubst.
 Qed.
 
 Fixpoint insert {A : Type} (n : nat) (x : A) (l : list A) :

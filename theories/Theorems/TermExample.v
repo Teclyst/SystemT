@@ -55,6 +55,20 @@ Definition currify :=
       (bvarT (S (S O)))
       (pairT (bvarT (S O)) (bvarT O))))).
 
+Definition fiboT :=
+  absT
+    (plT
+      (recT
+        (pairT oT (sT oT))
+        (absT
+          (absT
+            (pairT
+              (prT (bvarT (S O)))
+              (appT
+                (appT addT (plT (bvarT (S O))))
+                (prT (bvarT (S O)))))))
+        (bvarT O))).
+
 Lemma type_idT {t : typeT} :
     |- idT :T t ->T t.
 Proof.
@@ -136,7 +150,7 @@ Proof.
   unfold Context.bMapsTo;
   simpl;
   reflexivity.
-Qed.
+Qed.  
 
 Lemma type_currify {t u v : typeT} :
     |- currify :T (t *T u ->T v) ->T t ->T u ->T v.

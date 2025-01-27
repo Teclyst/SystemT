@@ -14,6 +14,12 @@ let rec nat_to_zt n =
   | O -> zero
   | S n -> nat_to_zt n + one
 
+let rec zt_to_nat n =
+  match compare n zero with
+  | 0 -> O
+  | 1 -> S (zt_to_nat (n - one)) 
+  | _ -> raise (Invalid_argument "Strictly negative!")
+
 let rec term_to_zt e =
   match e with
   | OT -> Some zero

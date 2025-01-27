@@ -8,6 +8,8 @@ Module TIdent <: IDENT := StringIdent.
 
 Module TMap := TIdent.Map.
 
+Module TMapFacts := Coq.FSets.FMapFacts.WFacts TMap.
+
 Module TIdentFacts := IdentFacts TIdent.
 
 Inductive typeT :=
@@ -21,7 +23,7 @@ Notation "t ->T u" := (funT t u) (at level 80, right associativity) : system_t_t
 
 Notation "t *T u" := (prodT t u) (at level 65, left associativity) : system_t_type_scope.
 
-Fixpoint typeT_tsubst (x : TIdent.t) (a t : typeT) :=
+Fixpoint tsubst (x : TIdent.t) (a t : typeT) :=
   match t with
   | tvarT y =>
     match TIdentFacts.eqb x y with
@@ -29,14 +31,14 @@ Fixpoint typeT_tsubst (x : TIdent.t) (a t : typeT) :=
     | _ => tvarT y
     end
   | funT t u =>
-    funT (typeT_tsubst x a t) (typeT_tsubst x a u)
+    funT (tsubst x a t) (tsubst x a u)
   | prodT t u =>
-    prodT (typeT_tsubst x a t) (typeT_tsubst x a u)
+    prodT (tsubst x a t) (tsubst x a u)
   | _ =>
     t
   end.
 
-Fixpoint typeT_par_tsubst (s : TMap.t typeT) (t : typeT) :=
+Fixpoint par_tsubst (s : TMap.t typeT) (t : typeT) :=
   match t with
   | tvarT x =>
     match TMap.find x s with
@@ -44,9 +46,9 @@ Fixpoint typeT_par_tsubst (s : TMap.t typeT) (t : typeT) :=
     | _ => tvarT x
     end
   | funT t u =>
-    funT (typeT_par_tsubst s t) (typeT_par_tsubst s u)
+    funT (par_tsubst s t) (par_tsubst s u)
   | prodT t u =>
-    prodT (typeT_par_tsubst s t) (typeT_par_tsubst s u)
+    prodT (par_tsubst s t) (par_tsubst s u)
   | _ =>
     t
   end.
