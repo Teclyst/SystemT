@@ -1,10 +1,6 @@
 Require Import Definitions.Type.
 Require Import Definitions.Term.
 Require Import Definitions.Context.
-Require Import Theorems.Context.
-
-Require Import FSets.FMaps.
-Require Import List.
 
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
@@ -15,9 +11,10 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
     Context.bMapsTo n t G ->
     derivation G (bvarT n) t
   | fvarT_ax :
-    forall G : Context.t, forall x : FIdent.t, forall t : typeT,
+    forall G : Context.t, forall s : TMap.t typeT,
+    forall x : FIdent.t, forall t : typeT,
     Context.fMapsTo x t G ->
-    derivation G (fvarT x) t
+    derivation G (fvarT x) (par_tsubst s t)
   | absT_in :
     forall G : Context.t, forall e : termT, forall t u : typeT,
     derivation (Context.bpush t G) e u ->
@@ -65,6 +62,3 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
 
 Notation "G |- e :T t" := (derivation G e t) (at level 90) : system_t_type_scope.
 Notation "|- e :T t" := (derivation Context.empty e t) (at level 90) : system_t_type_scope.
-
-Close Scope system_t_type_scope.
-Close Scope system_t_term_scope.

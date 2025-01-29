@@ -25,8 +25,10 @@ Definition map (f : typeT -> typeT) (G : t) : t := {|
   fmap := FMap.map f (fmap G)
 |}.
 
-Definition context_par_tsubst (s : TMap.t typeT) : t -> t :=
-  map (par_tsubst s).
+Definition context_par_tsubst (s : TMap.t typeT) (G : t) : t := {|
+  bmap := List.map (par_tsubst s) (bmap G);
+  fmap := fmap G
+|}.
 
 Definition bpush (u : typeT) (G : t) : t := {|
   bmap := u :: (bmap G);
@@ -40,9 +42,9 @@ Definition context_tsubst_preorder_with_tsubst
   (s : TMap.t typeT) (G H : t) :
     Prop :=
   (forall (n : nat) (u : typeT),
-      bMapsTo n u G -> bMapsTo n (par_tsubst s u) H) /\
-    (forall (x : FIdent.t) (u : typeT),
-      fMapsTo x u G -> fMapsTo x (par_tsubst s u) H).
+    bMapsTo n u G -> bMapsTo n (par_tsubst s u) H) /\
+  (forall (x : FIdent.t) (u : typeT),
+    fMapsTo x u G -> fMapsTo x u H).
 
 Notation "G <|( s ) H" :=
   (context_tsubst_preorder_with_tsubst s G H) (at level 90) :

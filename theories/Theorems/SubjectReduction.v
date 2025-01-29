@@ -3,10 +3,8 @@ Require Import Definitions.Type.
 Require Import Definitions.Term.
 Require Import Definitions.Reduction.
 Require Import Definitions.Typing.
-Require Import Theorems.Reduction.
-Require Import Definitions.Context.
 Require Import Theorems.Context.
-Require Import Theorems.Type.
+Require Import Theorems.Reduction.
 
 Require Import PeanoNat.
 Require Import List.
@@ -15,37 +13,6 @@ Require Import ssreflect ssrfun ssrbool.
 
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
-
-Lemma derivation_par_tsubst_preorder_with_tsubst
-  {G H : Context.t} {e : termT} {t : typeT} {s : TMap.t typeT} :
-    G <|(s) H ->
-    G |- e :T t ->
-    H |- e :T par_tsubst s t.
-Proof.
-  move=> [Hbmap Hfmap] D.
-  move: H Hbmap Hfmap.
-  induction D;
-  eauto using derivation;
-  simpl.
-  move=> H Hbmap Hfmap.
-  apply absT_in.
-  have Htsubst : G <|(s) H.
-  constructor;
-  auto.
-  rewrite (context_tsubst_preorder_with_tsubst_bpush (t := t)) in Htsubst.
-  destruct Htsubst as [Hbmap2 Hfmap2].
-  apply IHD;
-  assumption.
-Qed.
-
-Lemma derivation_no_context_derivation
-  {G : Context.t} {e : termT} {t : typeT} :
-    |- e :T t -> G |- e :T t.
-Proof.
-  rewrite <- (par_tsubst_empty (@TMap.empty_1 _)) at -1.
-  apply derivation_par_tsubst_preorder_with_tsubst.
-  exact empty_context_tsubst_preorder_with_tsubst.
-Qed.
 
 Fixpoint insert {A : Type} (n : nat) (x : A) (l : list A) :
     option (list A) :=
@@ -358,7 +325,7 @@ Proof.
   --- apply Nat.compare_eq in Hcomp.
       rewrite Hcomp in Hins.
       apply binsert_bMapsTo in Hins.
-      rewrite (Context.bMapsTo_fun H2 Hins).
+      rewrite (Theorems.Context.bMapsTo_fun H2 Hins).
       exact Ha.
   --- apply Compare_dec.nat_compare_Lt_lt in Hcomp.
       destruct n as [ | n];

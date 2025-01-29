@@ -453,7 +453,7 @@ Proof.
   clear Heq2 f.
   move: s t Heq1.
   induction e;
-  move=> s t Heq;
+  move=> q t Heq;
   simpl;
   try f_equal;
   eauto.
@@ -499,12 +499,12 @@ Lemma par_fsubst_bshift {e : termT} {m : nat} {s : FMap.t termT} :
 Proof.
   move: m s.
   induction e;
-  move=> m s;
+  move=> m r;
   simpl;
   try f_equal;
   eauto.
   - rewrite FMapFacts.map_o.
-    destruct (FMap.find k s);
+    destruct (FMap.find s r);
     reflexivity.
   - destruct (PeanoNat.Nat.leb m n);
     reflexivity.
@@ -519,21 +519,17 @@ Proof.
   move: f m s.
   induction e;
   simpl;
-  move=> g m s;
+  move=> g m r;
   try (
     f_equal;
     auto;
     fail
   ).
-  - destruct (FMap.find k s) eqn:Heq.
-  --- rewrite (FMap.find_1 (FMap.map_1 (bshift m) (FMap.find_2 Heq))).
-      exact bshift_bsubst_eq.
-  --- have foo : FMap.find k (FMap.map (bshift m) s) = None.
-      rewrite FMapFacts.map_o.
-      rewrite Heq.
-      reflexivity.
-      rewrite foo.
-      reflexivity.
+  - rewrite FMapFacts.map_o.
+    destruct (FMap.find s r) eqn:Heq;
+    simpl.
+  --- exact bshift_bsubst_eq.
+  --- reflexivity.
   - destruct (PeanoNat.Nat.compare m n);
     destruct n;
     reflexivity.
@@ -567,7 +563,7 @@ Lemma par_bsubst_bsubst_eq {e f : termT} {n : nat} {s : list termT} :
 Proof.
   move: n s f.
   induction e;
-  move=> m s h;
+  move=> m r h;
   simpl;
   try (f_equal;
     auto).
@@ -591,19 +587,19 @@ Proof.
       rewrite Heq.
       simpl.
       rewrite List.nth_error_map.
-      destruct (List.nth_error s (n - S m)) eqn:Heq2;
+      destruct (List.nth_error r (n - S m)) eqn:Heq2;
       simpl.
   ----- rewrite bshift_bsubst_eq.
         reflexivity.
   ----- rewrite List.map_length.
         rewrite List.nth_error_None in Heq2.
-        destruct (PeanoNat.Nat.compare m (n - length s)) eqn:Hcomp2;
+        destruct (PeanoNat.Nat.compare m (n - length r)) eqn:Hcomp2;
         try rewrite PeanoNat.Nat.compare_eq_iff in Hcomp2;
         try rewrite PeanoNat.Nat.compare_lt_iff in Hcomp2;
         try rewrite PeanoNat.Nat.compare_gt_iff in Hcomp2;
-        destruct (n - length s) eqn:Heq3;
+        destruct (n - length r) eqn:Heq3;
         try lia.
-        have Heq4 : n - S (length s) = n0.
+        have Heq4 : n - S (length r) = n0.
         lia.
         rewrite Heq4.
         reflexivity.

@@ -1,4 +1,6 @@
+Require Import FSets.FSets.
 Require Import FSets.FMaps.
+Require Import FSets.FMapAVL.
 Require Structures.OrderedType.
 Require Import PeanoNat.
 Require Import Nat.
@@ -7,129 +9,205 @@ Require Import String.
 
 Require Import ssreflect ssrfun ssrbool.
 
-Module Type IDENTfun (Map : S).
+Module Type IDENTfun (E : UsualOrderedType).
 
-  Notation t := Map.key.
+  Notation t := E.t.
 
-  Parameter new : forall elt : Type, Map.t elt -> t.
+  Parameter new : list t -> t.
 
-  Axiom new_spec :
-      forall elt : Type, forall s : Map.t elt,
-      ~ Map.In (new elt s) s.
+  Axiom new_spec : forall l : list t, ~ In (new l) l.
 
 End IDENTfun.
 
 Module Type IDENT.
 
-  Declare Module Map : S.
+  Declare Module E : UsualOrderedType.
 
-  Include IDENTfun Map. 
+  Include IDENTfun E. 
 
 End IDENT.
 
-Module IdentFacts (Import Ident : IDENT).
+Module IdentFacts (Import Ident : IDENT)
+  (IdentSet : FSets.FSetInterface.S
+    with Definition E.t := Ident.E.t
+    with Definition E.eq := Ident.E.eq)
+  (IdentMap : FSets.FMapInterface.S
+    with Definition E.t := Ident.E.t
+    with Definition E.eq := Ident.E.eq).
 
-  Module OTFacts := OrderedTypeFacts Map.E.
+  Include OrderedTypeFacts E.
 
-  Notation eq := Map.E.eq.
-
-  Notation eqb := OTFacts.eqb.
-
-  Lemma eqb_spec :
-      forall x y : t, Bool.reflect (eq x y) (eqb x y).
+  Lemma eqb_spec {x y : t} : Bool.reflect (eq x y) (eqb x y).
   Proof.
-    intros x y.
-    apply Bool.iff_reflect.
-    unfold eqb.
-    destruct OTFacts.eq_dec;
-    constructor;
-    auto.
-    intro Heq.
-    discriminate Heq. 
+    destruct eqb eqn:Heq;
+    unfold eqb in Heq;
+    destruct eq_dec;
+    try discriminate Heq;
+    try left;
+    try right;
+    assumption. 
+  Qed.
+
+  Lemma eqb_refl {x : t} : eqb x x = true.
+  Proof.
+    apply/ eqb_spec.
+    reflexivity.
+  Qed.
+
+  Lemma in_iff_inA_eq {A : Type} {a : A} {l : list A} :
+    InA eq a l <-> In a l.
+  Proof.
+    constructor; 
+    move=> Hin.
+    - induction Hin;
+      simpl.
+    --- left.
+        symmetry.
+        assumption.
+    --- right.
+        assumption.
+    - induction l.
+    --- destruct Hin.
+    --- destruct Hin as [Heq | Hin].
+    ----- left.
+          symmetry.
+          assumption.
+    ----- right.
+          auto.
+  Qed.
+
+  Definition set_new (s : IdentSet.t) :=
+    new (IdentSet.elements s).
+
+  Lemma set_new_spec {s : IdentSet.t} :
+    ~ IdentSet.In (set_new s) s.
+  Proof.
+    move=> Hin.
+    apply IdentSet.elements_1 in Hin.
+    rewrite in_iff_inA_eq in Hin.
+    destruct (new_spec _ Hin).
+  Qed.
+
+  Definition map_new {A : Type} (s : IdentMap.t A) :=
+    new (List.map fst (IdentMap.elements s)).
+
+  Lemma in_iff_inA_eq_key_elt {A : Type} {a : t * A} {l : list (t * A)} :
+    InA (@IdentMap.eq_key_elt A) a l <-> In a l.
+  Proof.
+    constructor; 
+    move=> Hin.
+    - induction Hin;
+      simpl.
+    --- left.
+        symmetry.
+        destruct a as [a b].
+        destruct y as [c d].
+        destruct H as [Heq1 Heq2].
+        f_equal;
+        assumption.
+    --- right.
+        assumption.
+    - induction l.
+    --- destruct Hin.
+    --- destruct Hin as [Heq | Hin].
+    ----- left.
+          destruct a as [a b].
+          destruct a0 as [c d].
+          inversion Heq.
+          constructor;
+          reflexivity.
+    ----- right.
+          auto.
+  Qed.
+
+  Lemma map_new_spec {A : Type} {s : IdentMap.t A} :
+    ~ IdentMap.In (map_new s) s.
+  Proof.
+    move=> [a Hmap].
+    apply IdentMap.elements_1 in Hmap.
+    unfold map_new in Hmap.
+    rewrite in_iff_inA_eq_key_elt in Hmap.
+    apply (in_map fst) in Hmap.
+    simpl in Hmap.
+    destruct (new_spec _ Hmap).
   Qed.
 
 End IdentFacts.
 
-Module Nat_as_OT := Structures.OrderedTypeEx.Nat_as_OT.
+Module Nat_as_OT <: UsualOrderedType :=
+  Structures.OrderedTypeEx.Nat_as_OT.
 
-Module NatMap : S
+Module NatSet : FSets.FSetInterface.S
   with Definition E.t := nat
   with Definition E.eq := @eq nat :=
-  FMapList.Make (Nat_as_OT).
+  FSets.FSetAVL.Make Nat_as_OT.
+
+Module NatMap : FSets.FMapInterface.S
+  with Definition E.t := nat
+  with Definition E.eq := @eq nat :=
+  FSets.FMapAVL.Make Nat_as_OT.
 
 Module NatIdent <: IDENT.
 
-  Module Map := NatMap.
+  Module E := Nat_as_OT.
 
-  Notation t := Map.key.
+  Notation t := nat.
 
   Definition eqb := Nat.eqb.
 
   Infix "=?" := eqb (at level 70).
 
-  Definition max {elt} (s : NatMap.t elt) :=
-    NatMap.fold (fun x _ acc => Nat.max x acc) s O.
-  
-  Definition new {elt} (s : NatMap.t elt) :=
-    S (max s).
+  Definition max (l : list nat) :=
+    List.fold_right (fun x acc => Nat.max x acc) O l.
 
-  Lemma max_geq {elt} (s : NatMap.t elt) (x : nat) :
-      NatMap.In x s -> max s >= x.
+  Definition new (l : list nat) :=
+    S (max l).
+
+  Lemma max_geq (l : list nat) (n : nat) :
+      In n l -> n <= max l.
   Proof.
-    intro Hin.
-    destruct Hin as [e Hmap].
-    unfold max.
-    rewrite NatMap.fold_1.
-    apply NatMap.elements_1 in Hmap.
-    generalize O.
-    induction Hmap; intro n.
-    - destruct H as [Heq _].
-      unfold NatMap.E.eq in Heq.
-      simpl in Heq.
-      simpl.
-      rewrite Heq.
-      eapply Nat.le_trans.
-    --- exact (Nat.le_max_l y.1 n).
-    --- generalize (Nat.max y.1 n).
-        clear n.
-        induction l;
-        simpl;
-        intro n.
-    ----- apply Nat.le_refl.
-    ----- eapply Nat.le_trans.
-    ------- exact (Nat.le_max_r a.1 n).
-    ------- exact (IHl (Nat.max a.1 n)).
-    - simpl.
-      exact (IHHmap (Nat.max y.1 n)).
+    move=> Hin.
+    induction l.
+    destruct Hin.
+    simpl;
+    destruct Hin.
+    - Lia.lia.
+    - have Hle := IHl H.
+      Lia.lia. 
   Qed.
 
-  Lemma new_spec {elt} (s : NatMap.t elt) :
-      ~ NatMap.In (new s) s.
+  Lemma new_spec {l : list nat} :
+      ~ In (new l) l.
   Proof.
-    unfold new.
     intro HIn.
-    have : (S (max s)) <= max s.
-    - exact (max_geq s (S (max s)) HIn).
-    - intro Hleq.
-      rewrite <- Nat.lt_succ_r in Hleq.
-      exact (Nat.lt_irrefl _ Hleq).
+    apply max_geq in HIn.
+    unfold new in HIn.
+    Lia.lia.
   Qed.
 
 End NatIdent.
 
-Module StringMap : S
+Module String_as_OT <: UsualOrderedType :=
+  Structures.OrderedTypeEx.String_as_OT.
+
+Module StringSet : FSets.FSetInterface.S
   with Definition E.t := string
   with Definition E.eq := @eq string :=
-  FMapList.Make (Structures.OrderedTypeEx.String_as_OT).
+  FSets.FSetAVL.Make String_as_OT.
+
+Module StringMap : FSets.FMapInterface.S
+  with Definition E.t := string
+  with Definition E.eq := @eq string :=
+  FSets.FMapAVL.Make String_as_OT.
 
 Module StringIdent <: IDENT.
 
   Open Scope string_scope.
 
-  Module Map := StringMap.
+  Module E := String_as_OT.
 
-  Notation t := Map.key.
-  
+  Notation t := string.
+
   Definition eqb := String.eqb.
 
   Infix "=?" := eqb (at level 70).
@@ -148,53 +226,34 @@ Module StringIdent <: IDENT.
     auto.
   Qed.
 
-  Definition max_length {elt} (s : StringMap.t elt) :=
-    StringMap.fold (fun x _ acc => Nat.max (length x) acc) s O.
-  
-  Definition new {elt} (s : StringMap.t elt) :=
-    string_of_length (S (max_length s)).
+  Definition max_length (l : list string) :=
+    List.fold_right (fun x acc => Nat.max (length x) acc) O l.
 
-  Lemma max_length_geq {elt} (s : StringMap.t elt) (x : string) :
-      StringMap.In x s -> max_length s >= length x.
+  Definition new (l : list string) :=
+    string_of_length (S (max_length l)).
+
+  Lemma max_length_geq {l : list string} {x : string} :
+      In x l -> max_length l >= length x.
   Proof.
-    intro Hin.
-    destruct Hin as [e Hmap].
-    unfold max_length.
-    rewrite StringMap.fold_1.
-    apply StringMap.elements_1 in Hmap.
-    generalize O.
-    induction Hmap; intro n.
-    - destruct H as [Heq _].
-      unfold NatMap.E.eq in Heq.
-      simpl in Heq.
-      simpl.
-      rewrite Heq.
-      eapply Nat.le_trans.
-    --- exact (Nat.le_max_l (length y.1) n).
-    --- generalize (Nat.max (length y.1) n).
-        clear n.
-        induction l;
-        simpl;
-        intro n.
-    ----- apply Nat.le_refl.
-    ----- eapply Nat.le_trans.
-    ------- exact (Nat.le_max_r (length a.1) n).
-    ------- exact (IHl (Nat.max (length a.1) n)).
-    - simpl.
-      exact (IHHmap (Nat.max (length y.1) n)).
+    move=> Hin.
+    induction l.
+    destruct Hin.
+    simpl;
+    destruct Hin.
+    - rewrite H.
+      Lia.lia.
+    - have Hle := IHl H.
+      Lia.lia. 
   Qed.
 
-  Lemma new_spec {elt} (s : StringMap.t elt) :
-      ~ StringMap.In (new s) s.
+  Lemma new_spec {l : list string} :
+      ~ In (new l) l.
   Proof.
     unfold new.
-    intro HIn.
-    have : (S (max_length s)) <= max_length s.
-    - rewrite <- string_of_length_spec.
-      exact (max_length_geq s (string_of_length (S (max_length s))) HIn).
-    - intro Hleq.
-      rewrite <- Nat.lt_succ_r in Hleq.
-      exact (Nat.lt_irrefl _ Hleq).
+    move=> HIn.
+    apply max_length_geq in HIn.
+    rewrite string_of_length_spec in HIn.
+    Lia.lia.
   Qed.
 
 End StringIdent.

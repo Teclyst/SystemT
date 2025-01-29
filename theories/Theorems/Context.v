@@ -45,7 +45,7 @@ Proof.
   --- exact I.
 Qed.
 
-#[export] Instance preorder : PreOrder context_tsubst_preorder.
+#[export] Instance preorder_context_tsubst_preorder : PreOrder context_tsubst_preorder.
 Proof.
   constructor.
   - move=> G.
@@ -55,19 +55,14 @@ Proof.
       rewrite par_tsubst_empty.
   ----- exact (@TMap.empty_1 typeT).
   ----- assumption.
-  --- move=> x t Hmap.
-      rewrite par_tsubst_empty.
-  ----- exact (@TMap.empty_1 typeT).
-  ----- assumption.
+  --- auto.
   - move=> G H I [s [Hbmaps Hfmaps]] [h [Hbmaph Hfmaph]].
     exists (tsubst_compose s h).
     constructor.
   --- move=> n t HbmapG.
       rewrite <- par_tsubst_par_tsubst.
       exact (Hbmaph n (par_tsubst s t) (Hbmaps n t HbmapG)).
-  --- move=> x t HbmapG.
-      rewrite <- par_tsubst_par_tsubst.
-      exact (Hfmaph x (par_tsubst s t) (Hfmaps x t HbmapG)).
+  --- auto.
 Qed.
 
 Lemma empty_context_tsubst_preorder_with_tsubst
@@ -82,7 +77,7 @@ Proof.
   - move=> x u Hmap.
     unfold fMapsTo in Hmap.
     destruct (FMap.empty_1 Hmap).
-Qed.  
+Qed.
 
 Lemma context_par_tsubst_context_tsubst_preorder_with_tsubst
   {s : TMap.t typeT} {G : t} {t : typeT} :
@@ -98,13 +93,7 @@ Proof.
     rewrite List.nth_error_map.
     rewrite Hmap.
     reflexivity.
-  - move=> x u Hmap.
-    unfold fMapsTo.
-    simpl.
-    unfold fMapsTo in Hmap.
-    simpl in Hmap.
-    apply FMap.map_1.
-    assumption.
+  - auto.
 Qed.
 
 Lemma context_tsubst_preorder_with_tsubst_bpush

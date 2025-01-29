@@ -587,13 +587,13 @@ Proof.
   move=> Hmap Hderiv.
   move: s Hmap.
   induction Hderiv;
-  move=> s Hmap;
+  move=> r Hmap;
   eauto with reducibility_candidate_lemmas;
   simpl;
   try constructor;
   eauto with reducibility_candidate_lemmas.
   - rewrite Nat.sub_0_r.
-    destruct (List.nth_error s n) as [u | ] eqn:Heq.
+    destruct (List.nth_error r n) as [u | ] eqn:Heq.
   --- apply (Hmap n);
       auto.
   --- exact reducibility_candidate_bvarT. 

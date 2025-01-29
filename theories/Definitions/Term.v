@@ -20,7 +20,15 @@ Open Scope system_t_term_scope.
 
 Module FIdent <: IDENT := StringIdent.
 
-Module FIdentFacts := IdentFacts FIdent.
+Module FSet := StringSet.
+
+Module FSetFacts := FSets.FSetFacts.Facts FSet.
+
+Module FMap := StringMap.
+
+Module FMapFacts := FSets.FMapFacts.Facts FMap.
+
+Module FIdentFacts := IdentFacts FIdent FSet FMap.
 
 (** [termT] is the [Type] representing the terms of System-T.
 
@@ -266,10 +274,6 @@ Fixpoint par_bsubst (n : nat) (s : list termT) (e : termT) :=
   end.
 
 Notation "e [ n <- f ]" := (bsubst n e f) (at level 50) : system_t_term_scope.
-
-Module FMap := FIdent.Map.
-
-Module FMapFacts := Coq.FSets.FMapFacts.WFacts FMap.
 
 (** [fsubst x e a] is [e], where all the occurrences of the
     variable bound by the lambda at height [n] above the root are
