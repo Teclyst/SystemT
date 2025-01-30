@@ -701,9 +701,9 @@ Proof.
   --- simpl.
 Admitted.
 
-Lemma unify_correct
+Lemma unify_correct_1
   {p : unification_problem} {s : TMap.t typeT} :
     unify p = ok s -> solves s p.
 Proof.
-  exact unify_aux_correct.
+  exact unify_aux_correct_1.
 Qed.

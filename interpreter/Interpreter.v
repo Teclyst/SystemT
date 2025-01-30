@@ -13,4 +13,4 @@ Extract Inductive option_eq => "option" [ "Some" "None" ].
 Extract Inductive list => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
 
-Extraction "coqInterpreter" termT reduce fiboT.
+Extraction "coqInterpreter" FMap termT nat_as_natT addT reduce par_fsubst.
