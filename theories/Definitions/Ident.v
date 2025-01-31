@@ -132,6 +132,32 @@ Module IdentFacts (Import Ident : IDENT)
     destruct (new_spec _ Hmap).
   Qed.
 
+  Definition set_new_map (s t : IdentSet.t) : IdentMap.t Ident.t :=
+    (IdentSet.fold
+      (fun x acc =>
+        let y := set_new acc.2 in
+        (IdentMap.add x y acc.1, IdentSet.add y acc.2))
+      t
+      (IdentMap.empty Ident.t, IdentSet.union s t)).1.
+
+  Lemma set_new_map_spec_1 {s t : IdentSet.t} {x y : Ident.t} :
+      IdentMap.MapsTo x y (set_new_map s t) ->
+      ~ IdentSet.In y (IdentSet.union s t).
+  Proof.
+  Admitted.
+
+  Lemma set_new_map_spec_2 {s t : IdentSet.t} {w x y z : Ident.t} :
+      IdentMap.MapsTo w x (set_new_map s t) ->
+      IdentMap.MapsTo y z (set_new_map s t) -> x = z ->
+      w = y.
+  Proof.
+  Admitted.
+
+  Lemma set_new_map_spec_3 {s t : IdentSet.t} {x : Ident.t} :
+      IdentSet.In x s -> IdentMap.In x (set_new_map s t).
+  Proof.
+  Admitted.
+
 End IdentFacts.
 
 Module Nat_as_OT <: UsualOrderedType :=

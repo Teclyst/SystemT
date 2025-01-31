@@ -38,7 +38,7 @@ Definition bpush (u : typeT) (G : t) : t := {|
 Definition Equal (G H : t) : Prop :=
   (bmap G) = (bmap H) /\ FMap.Equal (fmap G) (fmap H).
 
-Definition context_tsubst_preorder_with_tsubst
+Definition context_order_with_tsubst
   (s : TMap.t typeT) (G H : t) :
     Prop :=
   (forall (n : nat) (u : typeT),
@@ -46,14 +46,14 @@ Definition context_tsubst_preorder_with_tsubst
   (forall (x : FIdent.t) (u : typeT),
     fMapsTo x u G -> fMapsTo x u H).
 
-Notation "G <|( s ) H" :=
-  (context_tsubst_preorder_with_tsubst s G H) (at level 90) :
+Notation "G >><c( s ) H" :=
+  (context_order_with_tsubst s G H) (at level 90) :
     system_t_type_scope.
 
-Definition context_tsubst_preorder
+Definition context_order
   (G H : t) :
-    Prop := exists s : TMap.t typeT, G <|(s) H.
+    Prop := exists s : TMap.t typeT, G >><c(s) H.
 
-Notation "G <| H" :=
-  (context_tsubst_preorder G H) (at level 90) :
+Notation "G >><c H" :=
+  (context_order G H) (at level 90) :
     system_t_type_scope.

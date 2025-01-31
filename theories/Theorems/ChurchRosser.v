@@ -12,7 +12,7 @@ Inductive par_one_reduction : termT -> termT -> Prop :=
   | par_redrefl : forall e : termT, par_one_reduction e e
   | par_redex_beta : forall e f g h : termT,
     par_one_reduction e g -> par_one_reduction f h ->
-    par_one_reduction (appT (absT e) f) (g[O <- h])
+    par_one_reduction (appT (absT e) f) (g [|O <- h|])
   | par_redex_plT_pairT : forall e f g : termT,
     par_one_reduction e g ->
     par_one_reduction (plT (pairT e f)) g
@@ -109,7 +109,7 @@ Proof.
 Qed.
 
 Lemma parallel_bsubst {e f g h : termT} {n : nat} :
-    e =>1 g -> f =>1 h -> e[n <- f] =>1 g[n <- h].
+    e =>1 g -> f =>1 h -> e [|n <- f|] =>1 g [|n <- h|].
 Proof.
   intro Hred1.
   move: n f h.
@@ -154,13 +154,13 @@ Proof.
   - eexists.
     eauto using par_one_reduction.
   - inversion Hred2.
-  --- exists (g[O <- h]).
+  --- exists (g [|O <- h|]).
       eauto using par_one_reduction.
   --- destruct (IHHred1_1 g0) as [i Hi].
       auto.
       destruct (IHHred1_2 h0) as [j Hj].
       auto.
-      exists (i[O <- j]).
+      exists (i [|O <- j|]).
       destruct Hi.
       destruct Hj.
       constructor;
@@ -170,12 +170,12 @@ Proof.
       destruct (IHHred1_2 h0) as [i Hi];
       auto;
       destruct Hi.
-  ----- exists (g[O <- i]).
+  ----- exists (g [|O <- i|]).
         eauto using par_one_reduction, parallel_bsubst.
   ----- destruct (IHHred1_1 f1) as [j Hj];
         auto;
         destruct Hj.
-        exists (j[O <- i]);
+        exists (j [|O <- i|]);
         eauto using par_one_reduction, parallel_bsubst.
   - inversion Hred2;
     eauto using par_one_reduction.
@@ -247,7 +247,7 @@ Proof.
       inversion Hred1_1;
       destruct (IHHred1_2 h0 H3) as [i Hi];
       destruct Hi.
-  ----- exists (g0[0 <- i]).
+  ----- exists (g0 [|O <- i|]).
         eauto using par_one_reduction, parallel_bsubst.
   ----- destruct (IHHred1_1 (absT g0)) as [j Hj].
         rewrite <- H.
@@ -448,7 +448,7 @@ Proof.
   induction Hred;
   (try eauto with reduction_star_lemmas).
   - reflexivity.
-  - transitivity (e[O <- f]).
+  - transitivity (e [|O <- f|]).
   --- exists 1.
       rewrite <- one_reduction_reduction_1.
       eauto using one_reduction.

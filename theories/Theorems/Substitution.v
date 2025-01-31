@@ -94,7 +94,7 @@ Proof.
 Qed.
 
 Lemma bshift_bsubst_eq {e f : termT} {n : nat} :
-    (bshift n e)[n <- f] = e.
+    (bshift n e)[|n <- f|] = e.
 Proof.
   move: f n.
   induction e;
@@ -123,7 +123,7 @@ Proof.
 Qed.
 
 Lemma bshift_bsubst {e f : termT} {m n : nat} :
-    m <= n -> bshift n (e[m <- f]) = (bshift (S n) e)[m <- bshift n f].
+    m <= n -> bshift n (e [|m <- f|]) = (bshift (S n) e) [|m <- bshift n f|].
 Proof.
   move: f m n.
   induction e;
@@ -241,7 +241,7 @@ Proof.
 Qed.
 
 Lemma bshift_bsubst' {e f : termT} {m n : nat} :
-    m <= n -> bshift m (e[n <- f]) = (bshift m e) [S n <- bshift m f].
+    m <= n -> bshift m (e [|n <- f|]) = (bshift m e) [|S n <- bshift m f|].
 Proof.
   move: f m n.
   induction e;
@@ -308,7 +308,7 @@ Proof.
 Qed.
 
 Lemma bsubst_bsubst {e f g : termT} {m n : nat} :
-    m <= n -> e[m <- f][n <- g] = e[S n <- bshift m g][m <- f[n <- g]].
+    m <= n -> e [|m <- f|] [|n <- g|] = e [|S n <- bshift m g|] [|m <- f [|n <- g|]|].
 Proof.
   move: m n f g.
   induction e;
@@ -514,7 +514,8 @@ Proof.
 Qed.
 
 Lemma par_fsubst_bsubst {e f : termT} {m : nat} {s : FMap.t termT} :
-  (par_fsubst (FMap.map (bshift m) s) e) [m <- par_fsubst s f] = (par_fsubst s (e [m <- f])).
+  (par_fsubst (FMap.map (bshift m) s) e) [|m <- par_fsubst s f|] =
+  (par_fsubst s (e [|m <- f|])).
 Proof.
   move: f m s.
   induction e;
@@ -558,7 +559,7 @@ Proof.
 Qed.
 
 Lemma par_bsubst_bsubst_eq {e f : termT} {n : nat} {s : list termT} :
-    (par_bsubst (S n) (List.map (bshift n) s) e)[n <- f] =
+    (par_bsubst (S n) (List.map (bshift n) s) e) [|n <- f|] =
     (par_bsubst n (f :: s) e).
 Proof.
   move: n s f.

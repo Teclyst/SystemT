@@ -1,6 +1,8 @@
 Require Import Definitions.Type.
 Require Import Definitions.Term.
 Require Import Definitions.Context.
+Require Import Theorems.Type.
+Require Import Theorems.Unification.
 
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
@@ -60,5 +62,7 @@ Inductive derivation : Context.t -> termT -> typeT -> Prop :=
     derivation G g natT ->
     derivation G (recT e f g) t.
 
-Notation "G |- e :T t" := (derivation G e t) (at level 90) : system_t_type_scope.
-Notation "|- e :T t" := (derivation Context.empty e t) (at level 90) : system_t_type_scope.
+Notation "G |- e :T t" := (derivation G e t) (at level 90) :
+    system_t_type_scope.
+Notation "|- e :T t" := (derivation Context.empty e t) (at level 90) :
+    system_t_type_scope.

@@ -67,6 +67,9 @@ Fixpoint tsubst (x : TIdent.t) (a t : typeT) :=
     t
   end.
 
+Notation "u (| x |-> t |)" := (tsubst x t u) (at level 45) :
+    system_t_type_scope.
+
 Fixpoint par_tsubst (s : TMap.t typeT) (t : typeT) :=
   match t with
   | tvarT x =>
@@ -82,14 +85,20 @@ Fixpoint par_tsubst (s : TMap.t typeT) (t : typeT) :=
     t
   end.
 
-Definition tsubst_compose (s h : TMap.t typeT) : TMap.t typeT :=
+Notation "x >> s" := (par_tsubst s x) (at level 45) : system_t_type_scope.
+
+Definition tsubst_compose (r s : TMap.t typeT) : TMap.t typeT :=
   TMap.map2
     (fun opt1 opt2 =>
       match opt1, opt2 with
-      | Some t, _ => Some (par_tsubst h t)
+      | Some t, _ => Some (t >> s)
       | _, Some t => Some t
       | _, _ => None end)
-    s h.
+    r s.
+
+Notation "r >>> s" :=
+  (tsubst_compose r s) (at level 40, left associativity) :
+    system_t_type_scope.
 
 Definition tsubst_add_l (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
     TMap.t typeT :=
@@ -100,22 +109,40 @@ Definition tsubst_add_l (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
 
 Definition tsubst_add_r (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
     TMap.t typeT :=
-  TMap.add x (par_tsubst s t) s.
+  TMap.add x (t >> s) s.
+
+Notation "(| x |-> t |) >>> s" := (tsubst_add_r x t s) (at level 30) : system_t_type_scope.
 
 Definition ext_equal (r s : TMap.t typeT) : Prop :=
-  forall t : typeT, par_tsubst r t = par_tsubst s t. 
+  forall t : typeT, t >> r = t >> s. 
 
-Notation "r =ex s" := (ext_equal r s) (at level 50) : system_t_type_scope.
+Notation "r >>= s" := (ext_equal r s) (at level 50) :
+    system_t_type_scope.
 
 Definition tsubst_order_with_tsubst (q r s : TMap.t typeT) : Prop :=
-  s =ex tsubst_compose r q.
+  s >>= r >>> q.
 
-Notation "r <|s( q ) s" := (tsubst_order_with_tsubst q r s) (at level 50).
+Notation "r >><( q ) s" :=
+  (tsubst_order_with_tsubst q r s) (at level 50) : system_t_type_scope.
 
 Definition tsubst_order (r s : TMap.t typeT) : Prop :=
-  exists q : TMap.t typeT, r <|s( q) s.
+  exists q : TMap.t typeT, r >><(q) s.
 
-Notation "r <|s s" := (tsubst_order r s) (at level 50).
+Notation "r >>< s" := (tsubst_order r s) (at level 50) :
+    system_t_type_scope.
+
+Definition typeT_order_with_tsubst (s : TMap.t typeT) (t u : typeT) :
+    Prop :=
+  u = t >> s.
+
+Notation "t >><t( s ) u" :=
+  (typeT_order_with_tsubst s t u) (at level 50) : system_t_type_scope.
+
+Definition typeT_order (t u : typeT) : Prop :=
+  exists s : TMap.t typeT, t >><t(s) u.
+
+Notation "t >><t u" :=
+  (typeT_order t u) (at level 50) : system_t_type_scope.
 
 Definition unification_problem : Type := list (typeT * typeT).
 
@@ -144,13 +171,6 @@ Fixpoint size (t : typeT) : nat :=
   | _ => S O
   end.
 
-Lemma size_gt_O {t : typeT} : size t > O.
-Proof.
-  induction t;
-  simpl;
-  Lia.lia.
-Qed.
-
 Fixpoint problem_size (p : unification_problem) : nat :=
   match p with
   | nil => O
@@ -177,7 +197,7 @@ Inductive unification_problem_order (p q : unification_problem) : Prop :=
     problem_size p < problem_size q ->
     unification_problem_order p q.
 
-Inductive result (A B : Type) :=
+Inductive result (A B : Type) : Type :=
   | ok : A -> result A B
   | err : B -> result A B.
 
@@ -191,15 +211,20 @@ Definition result_map {A B C : Type} (f : A -> B) (r : result A C) :
   | err b => err b
   end.
 
-Inductive unification_error :=
+Inductive unification_error : Type :=
   | different_constructors :
     typeT -> typeT -> unification_error
   | tvarT_occurs :
     TIdent.t -> typeT -> unification_error.
 
-Definition unifies (s : TMap.t typeT) (t u : typeT) :=
-  par_tsubst s t = par_tsubst s u.
+Definition unifies (s : TMap.t typeT) (t u : typeT) : Prop :=
+  t >> s = u >> s.
 
 Definition solves
-  (s : TMap.t typeT) (p : unification_problem) :=
+  (s : TMap.t typeT) (p : unification_problem) : Prop :=
     List.Forall (fun c => unifies s (fst c) (snd c)) p.
+
+Definition unification_problem_tsubst
+  (x : TIdent.t) (t : typeT) (p : unification_problem) :
+    unification_problem :=
+  map (fun c : typeT * typeT => (c.1 (|x |-> t|), c.2 (|x |-> t|))) p.

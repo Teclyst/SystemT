@@ -11,7 +11,7 @@ Open Scope system_t_term_scope.
 Inductive one_reduction : termT -> termT -> Prop :=
   | redex_beta :
     forall e f : termT,
-    one_reduction (appT (absT e) f) (e[O <- f])
+    one_reduction (appT (absT e) f) (e [|O <- f|])
   | redex_plT_pairT :
     forall e f : termT,
     one_reduction (plT (pairT e f)) e
@@ -143,7 +143,7 @@ Fixpoint reducibleb (e : termT) : bool :=
 
 Fixpoint left_reduce (e : termT) : option termT :=
   match e with
-  | appT (absT e) f => Some (e[O <- f])
+  | appT (absT e) f => Some (e [|O <- f|])
   | plT (pairT e f) => Some e
   | prT (pairT e f) => Some f
   | iteT trueT e f => Some e

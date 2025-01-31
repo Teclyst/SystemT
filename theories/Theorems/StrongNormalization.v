@@ -70,10 +70,10 @@ Proof.
 Qed.
 
 Lemma strongly_normalizing_bsubst_inv {e f : termT} {n : nat} :
-    strongly_normalizing (e[n <- f]) ->
+    strongly_normalizing (e [|n <- f|]) ->
     strongly_normalizing e.
 Proof.
-  apply (strongly_normalizing_f_inv (r := fun e => e [n <- f])).
+  apply (strongly_normalizing_f_inv (r := fun e => e [|n <- f|])).
   eauto using one_reduction_bsubst_l.
 Qed.
 
@@ -293,7 +293,7 @@ Qed.
 Lemma reducibility_candidate_absT {t u : typeT} {e : termT} :
     (forall f : termT,
       reducibility_candidate t f ->
-      reducibility_candidate u (e[O <- f])) ->
+      reducibility_candidate u (e [|O <- f|])) ->
     reducibility_candidate (t ->T u) (absT e).
 Proof.
   move=> Hforall.

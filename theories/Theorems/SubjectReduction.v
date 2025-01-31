@@ -310,7 +310,7 @@ Lemma derivation_bsubst
     binsert n t G = Some H ->
     H |- e :T u ->
     G |- a :T t ->
-    G |- e[n <- a] :T u.
+    G |- e [|n <- a|] :T u.
 Proof.
   move: G H n u a.
   induction e;

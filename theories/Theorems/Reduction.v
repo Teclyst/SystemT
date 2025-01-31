@@ -306,7 +306,7 @@ Hint Resolve
   reduction_star_recT : reduction_star_lemmas.
 
 Lemma one_reduction_bsubst_l {e f g : termT} {n : nat} :
-    (e ->1 f) -> (e[n <- g] ->1 f[n <- g]).
+    (e ->1 f) -> (e [|n <- g|] ->1 f [|n <- g|]).
 Proof.
   move=> Hred.
   move: g n.
@@ -334,7 +334,7 @@ Proof.
 Qed.
 
 Lemma reduction_bsubst_l {e f g : termT} {m n : nat} :
-    (e ->(m) f) -> (e[n <- g] ->(m) f[n <- g]).
+    (e ->(m) f) -> (e [|n <- g|] ->(m) f [|n <- g|]).
 Proof.
   move=> Hred.
   move: g n.
@@ -344,7 +344,7 @@ Proof.
 Qed.
 
 Lemma reduction_star_bsubst_l {e f g : termT} {n : nat} :
-    (e ->* f) -> (e[n <- g] ->* f[n <- g]).
+    (e ->* f) -> (e [|n <- g|] ->* f [|n <- g|]).
 Proof.
   move=> Hred.
   destruct Hred as [m Hred].
@@ -354,7 +354,7 @@ Proof.
 Qed.
 
 Lemma one_reduction_bsubst_r {e f g : termT} {n : nat} :
-    (f ->1 g) -> (e[n <- f] ->* e[n <- g]).
+    (f ->1 g) -> (e [|n <- f|] ->* e [|n <- g|]).
 Proof.
   move: f g n.
   induction e;
@@ -372,21 +372,21 @@ Proof.
 Qed.
 
 Lemma reduction_bsubst_r {e f g : termT} {m n : nat} :
-    (f ->(m) g) -> (e[n <- f] ->* e[n <- g]).
+    (f ->(m) g) -> (e [|n <- f|] ->* e [|n <- g|]).
 Proof.
   move=> Hred.
   move: e n.
   induction Hred;
   move=> e' n'.
   - reflexivity.
-  - transitivity (e'[n' <- f]).
+  - transitivity (e' [|n' <- f|]).
   --- apply one_reduction_bsubst_r.
       assumption.
   --- auto.
 Qed.
 
 Lemma reduction_star_bsubst_r {e f g : termT} {n : nat} :
-    (f ->* g) -> (e[n <- f] ->* e[n <- g]).
+    (f ->* g) -> (e [|n <- f|] ->* e [|n <- g|]).
 Proof.
   move=> Hred.
   destruct Hred as [m Hred].
@@ -395,10 +395,10 @@ Proof.
 Qed.
 
 Lemma reduction_star_bsubst {e f g h : termT} {n : nat} :
-    (e ->* g) -> (f ->* h) -> (e[n <- f] ->* g[n <- h]).
+    (e ->* g) -> (f ->* h) -> (e [|n <- f|] ->* g [|n <- h|]).
 Proof.
   intros Hredl Hredr.
-  transitivity (g[n <-f]);
+  transitivity (g [|n <-f|]);
   eauto using reduction_star_bsubst_l, reduction_star_bsubst_r.
 Qed.
 
@@ -455,7 +455,7 @@ Proof.
         destruct e1 eqn:Heq; [
         | |
         left;
-        exists (t[O <- e2]);
+        exists (t [|O <- e2|]);
         eauto using one_reduction |
         ..
         ];

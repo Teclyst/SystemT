@@ -24,9 +24,11 @@ Proof.
   exact (@FMapFacts.MapsTo_fun _ _ _ _ _).
 Qed.
 
-#[export] Instance equivalence : Equivalence Equal.
+#[export] Instance Equivalence_Equal : Equivalence Equal.
 Proof.
-  constructor; constructor; auto using FMapFacts.Equal_refl.
+  constructor;
+  constructor;
+  auto using FMapFacts.Equal_refl.
   - destruct H as [H _].
     rewrite H.
     reflexivity.
@@ -45,7 +47,8 @@ Proof.
   --- exact I.
 Qed.
 
-#[export] Instance preorder_context_tsubst_preorder : PreOrder context_tsubst_preorder.
+#[export] Instance Preorder_context_order :
+    PreOrder context_order.
 Proof.
   constructor.
   - move=> G.
@@ -57,17 +60,17 @@ Proof.
   ----- assumption.
   --- auto.
   - move=> G H I [s [Hbmaps Hfmaps]] [h [Hbmaph Hfmaph]].
-    exists (tsubst_compose s h).
+    exists (s >>> h).
     constructor.
   --- move=> n t HbmapG.
       rewrite <- par_tsubst_par_tsubst.
-      exact (Hbmaph n (par_tsubst s t) (Hbmaps n t HbmapG)).
+      exact (Hbmaph n (t >> s) (Hbmaps n t HbmapG)).
   --- auto.
 Qed.
 
-Lemma empty_context_tsubst_preorder_with_tsubst
+Lemma empty_context_order_with_tsubst
   {s : TMap.t typeT} {G : t} :
-    empty <|(s) G.
+    empty >><c(s) G.
 Proof.
   constructor.
   - move=> n t Hmap.
@@ -79,9 +82,9 @@ Proof.
     destruct (FMap.empty_1 Hmap).
 Qed.
 
-Lemma context_par_tsubst_context_tsubst_preorder_with_tsubst
+Lemma context_par_tsubst_context_order_with_tsubst
   {s : TMap.t typeT} {G : t} {t : typeT} :
-    G <|(s) context_par_tsubst s G.
+    G >><c(s) context_par_tsubst s G.
 Proof.
   destruct G.
   constructor.
@@ -96,9 +99,9 @@ Proof.
   - auto.
 Qed.
 
-Lemma context_tsubst_preorder_with_tsubst_bpush
+Lemma context_order_with_tsubst_bpush
   {s : TMap.t typeT} {G H : t} {t : typeT} :
-    G <|(s) H <-> bpush t G <|(s) bpush (par_tsubst s t) H.
+    G >><c(s) H <-> bpush t G >><c(s) bpush (par_tsubst s t) H.
 Proof.
   constructor.
   - move=> [Hbmap Hfmap].

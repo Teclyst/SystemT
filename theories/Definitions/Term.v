@@ -273,7 +273,7 @@ Fixpoint par_bsubst (n : nat) (s : list termT) (e : termT) :=
     | _ => e
   end.
 
-Notation "e [ n <- f ]" := (bsubst n e f) (at level 50) : system_t_term_scope.
+Notation "e [| n <- f |]" := (bsubst n e f) (at level 50) : system_t_term_scope.
 
 (** [fsubst x e a] is [e], where all the occurrences of the
     variable bound by the lambda at height [n] above the root are
