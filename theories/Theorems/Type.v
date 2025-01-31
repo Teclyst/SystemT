@@ -1,8 +1,72 @@
 Require Import Definitions.Type.
 
 Require Import List.
+Require Import Morphisms.
 
 Require Import ssreflect ssrfun ssrbool.
+
+#[export] Instance Proper_unifies : Morphisms.Proper (ext_equal ==> eq ==> eq ==> iff)
+    unifies.
+Proof.
+  move=> r s Heq1 t u Heq2 v w Heq3;
+  rewrite Heq2.
+  rewrite Heq3.
+  unfold unifies.
+  repeat rewrite (Heq1 _).
+  reflexivity.
+Qed.
+
+#[export] Instance Proper_solves : Morphisms.Proper (ext_equal ==> eq ==> iff)
+    solves.
+Proof.
+  move=> r s Heq1 p q Heq2.
+  rewrite Heq2.
+  clear p Heq2.
+  induction q as [ | [t u] q].
+  - constructor;
+    move=> _;
+    left.
+  - constructor;
+    move=> Hsol;
+    inversion Hsol as [ | c l Huni Hforall Heq2];
+    clear c l Heq2 H;
+    right;
+    try rewrite <- Heq1;
+    try rewrite <- IHq;
+    try rewrite <- Heq1 in Huni;
+    try rewrite <- IHq in Hforall;
+    assumption.
+Qed.
+
+Lemma wf_unification_problem_order :
+  well_founded unification_problem_order.
+Proof.
+  move=> p.
+  generalize (PeanoNat.Nat.le_refl (problem_size p)).
+  generalize (problem_size p) at -1.
+  generalize (PeanoNat.Nat.le_refl (TSet.cardinal (problem_variable_set p))).
+  generalize (TSet.cardinal (problem_variable_set p)) at -1.
+  move=> n.
+  move: p.
+  induction n;
+  move=> p Hle1 m;
+  move: p Hle1;
+  induction m;
+  move=> p Hle1 Hle2;
+  constructor;
+  move=> q [Hlt | Hle Hlt];
+  try Lia.lia.
+  - apply IHm;
+    Lia.lia.
+  - eapply IHn.
+  --- Lia.lia.
+  --- apply PeanoNat.Nat.le_refl.
+  - eapply IHn.
+  --- Lia.lia.
+  --- apply PeanoNat.Nat.le_refl.
+  - apply IHm;
+    Lia.lia.
+Qed.
 
 Lemma par_tsubst_empty {s : TMap.t typeT} {t : typeT} :
     TMap.Empty s -> par_tsubst s t = t.
@@ -76,6 +140,86 @@ Proof.
       reflexivity.
 Qed.
 
+Lemma par_tsubst_size {x : TIdent.t} {s : TMap.t typeT} {t : typeT} :
+    occurs x t = true ->
+    size (par_tsubst s (tvarT x)) <= size (par_tsubst s t).
+Proof.
+  move=> Hocc.
+  induction t;
+  inversion Hocc.
+  - move/ TIdentFacts.eqb_spec in H0.
+    rewrite H0.
+    reflexivity.
+  - simpl (size (par_tsubst s (t1 ->T t2))).
+    destruct (occurs x t1) eqn:Heq1.
+  --- have Hle := IHt1 eq_refl.
+      Lia.lia.
+  --- simpl in H0.
+      have Hle := IHt2 H0.
+      Lia.lia.
+  - simpl (size (par_tsubst s (t1 *T t2))).
+    destruct (occurs x t1) eqn:Heq1.
+  --- have Hle := IHt1 eq_refl.
+      Lia.lia.
+  --- simpl in H0.
+      have Hle := IHt2 H0.
+      Lia.lia.
+Qed.
+
+Lemma par_tsubst_occur {x : TIdent.t} {s : TMap.t typeT} {t : typeT} :
+    occurs x t = true ->
+    unifies s (tvarT x) t ->
+    t = tvarT x.
+Proof.
+  move=> Hocc Hunif.
+  destruct t;
+  inversion Hocc.
+  - move/ TIdentFacts.eqb_spec in H0.
+    rewrite H0.
+    reflexivity.
+  - simpl in Hocc.
+    have Habs :
+      size (par_tsubst s (t1 ->T t2)) >
+      size (par_tsubst s (tvarT x)).
+  --- simpl (size (par_tsubst s (t1 ->T t2))).
+      destruct (occurs x t1) eqn:Heq.
+  ----- have Hcomp1 := par_tsubst_size Heq.
+        have Hcomp2 := Hcomp1 s.
+        Lia.lia.
+  ----- simpl in H0.
+        have Hcomp1 := par_tsubst_size H0.
+        have Hcomp2 := Hcomp1 s.
+        Lia.lia.
+  --- rewrite Hunif in Habs.
+      Lia.lia.
+  - simpl in Hocc.
+    have Habs :
+      size (par_tsubst s (t1 *T t2)) >
+      size (par_tsubst s (tvarT x)).
+  --- simpl (size (par_tsubst s (t1 *T t2))).
+      destruct (occurs x t1) eqn:Heq.
+  ----- have Hcomp1 := par_tsubst_size Heq.
+        have Hcomp2 := Hcomp1 s.
+        Lia.lia.
+  ----- simpl in H0.
+        have Hcomp1 := par_tsubst_size H0.
+        have Hcomp2 := Hcomp1 s.
+        Lia.lia.
+  --- rewrite Hunif in Habs.
+      Lia.lia.
+Qed.
+
+Lemma par_tsubst_nooccur {x : TIdent.t} {s : TMap.t typeT} {t : typeT} :
+    unifies s (tvarT x) t ->
+    t <> tvarT x ->
+    occurs x t = false.
+Proof.
+  move=> Hunif Hneq.
+  destruct (occurs x t) eqn:Heq.
+  - destruct (Hneq (par_tsubst_occur Heq Hunif)).
+  - reflexivity.
+Qed.
+
 Lemma par_tsubst_tsubst
   {s : TMap.t typeT} {x : TIdent.t} {t u : typeT} :
     (par_tsubst s (tsubst x t u)) =
@@ -93,6 +237,87 @@ Proof.
   unfold TMap.E.eq in Heq1;
   try contradiction;
   reflexivity.
+Qed.
+
+#[export] Instance Proper_tsubst_add_l :
+    Morphisms.Proper
+      (eq ==> eq ==> ext_equal ==> ext_equal)
+      tsubst_add_l.
+Proof.
+  move=> x y Heq1 t u Heq2 r s Heq3 v.
+  rewrite Heq1.
+  rewrite Heq2.
+  repeat rewrite <- tsubst_par_tsubst.
+  f_equal.
+  auto.
+Qed.
+
+#[export] Instance Proper_tsubst_add_r :
+    Morphisms.Proper
+      (eq ==> eq ==> ext_equal ==> ext_equal)
+      tsubst_add_r.
+Proof.
+  move=> x y Heq1 t u Heq2 r s Heq3 v.
+  rewrite Heq1.
+  rewrite Heq2.
+  repeat rewrite <- par_tsubst_tsubst.
+  auto.
+Qed.
+
+#[export] Instance Proper_tsubst_compose :
+    Morphisms.Proper
+      (ext_equal ==> ext_equal ==> ext_equal)
+      tsubst_compose.
+Proof.
+  move=> p q Heq1 r s Heq2 t.
+  repeat rewrite <- par_tsubst_par_tsubst.
+  rewrite Heq1.
+  auto.
+Qed.
+
+Lemma par_tsubst_tsubst_factor
+  {s : TMap.t typeT} {x : TIdent.t} {t : typeT} :
+    unifies s (tvarT x) t ->
+    s =ex tsubst_add_r x t s.
+Proof.
+  move=> Heq u.
+  induction u;
+  simpl;
+  f_equal;
+  eauto.
+  unfold tsubst_add_r.
+  rewrite TMapFacts.add_o.
+  destruct (TMapFacts.eq_dec x s0) as [Heq2 | Hneq2].
+  - fold (par_tsubst s (tvarT s0)).
+    rewrite <- Heq2.
+    assumption.
+  - reflexivity. 
+Qed.
+
+Lemma par_tsubst_tsubst_solves
+  {s : TMap.t typeT} {x : TIdent.t} {t : typeT} {p : unification_problem} :
+    unifies s (tvarT x) t ->
+    solves s p ->
+    solves s
+      (map
+        (fun c : typeT * typeT =>
+          (tsubst x t c.1, tsubst x t c.2))
+      p).
+Proof.
+  move=> Hunif.
+  induction p as [ | [u v] p].
+  - left.
+  - move=> Hsol.
+    inversion Hsol.
+    right.
+  --- simpl.
+      simpl in H1.
+      unfold unifies.
+      repeat rewrite par_tsubst_tsubst.
+      repeat rewrite <- par_tsubst_tsubst_factor;
+      assumption.
+  --- apply IHp.
+      assumption.
 Qed.
 
 Lemma unify_aux_funT {t u v w : typeT} {p q : unification_problem} :
@@ -428,7 +653,7 @@ Proof.
       assumption.
 Qed.
 
-Lemma unify_aux_correct_1
+Lemma unify_aux_sound
   {p : unification_problem} {ACC : Acc unification_problem_order p}
   {s : TMap.t typeT} :
     unify_aux p ACC = ok s -> solves s p.
@@ -673,10 +898,86 @@ Proof.
   ------- assumption.
 Qed.
 
-Lemma unify_aux_correct_2
+Lemma result_map_eq_ok_ex {A B C : Type} {f : A -> B} {r : result A C} :
+    (exists a : A, r = ok a) ->
+    exists b : B, result_map f r = ok b.
+Proof.
+  move=> [a Heq].
+  rewrite Heq.
+  simpl.
+  eauto.
+Qed.
+
+#[export] Instance ext_equal_equivalence : Equivalence ext_equal.
+Proof.
+  constructor.
+  - move=> s t.
+    reflexivity.
+  - move=> r s Heq t.
+    symmetry.
+    auto.
+  - move=> q r s Heq1 Heq2 t.
+    transitivity (par_tsubst r t);
+    auto.
+Qed.
+
+Lemma tsubst_compose_empty_r {s : TMap.t typeT} :
+    tsubst_compose s (TMap.empty typeT) =ex s.
+Proof.
+  move=> t.
+  rewrite <- par_tsubst_par_tsubst.
+  rewrite par_tsubst_empty.
+  - exact (TMap.empty_1 (elt := _)).
+  - reflexivity.  
+Qed.
+
+Lemma tsubst_compose_empty_l {s : TMap.t typeT} :
+    tsubst_compose (TMap.empty typeT) s =ex s.
+Proof.
+  move=> t.
+  rewrite <- par_tsubst_par_tsubst.
+  rewrite (par_tsubst_empty (s := (TMap.empty _))).
+  - exact (TMap.empty_1 (elt := _)).
+  - reflexivity.  
+Qed.
+
+Lemma tsubst_add_r_absorbs {x : TIdent.t} {t: typeT}
+  {s : TMap.t typeT} :
+    unifies s (tvarT x) t ->
+    tsubst_add_r x t s =ex
+    s.
+Proof.
+  move=> Hunif u.
+  induction u;
+  simpl;
+  f_equal;
+  auto.
+  rewrite TMapFacts.add_o.
+  destruct (TMapFacts.eq_dec x s0).
+  - repeat rewrite <- e.
+    fold (par_tsubst s (tvarT x)).
+    symmetry.
+    assumption.
+  - reflexivity.  
+Qed.
+
+Lemma tsubst_compose_tsubst_add_r {x : TIdent.t} {t: typeT}
+  {r s : TMap.t typeT} :
+    tsubst_compose (tsubst_add_r x t r) s =ex
+    tsubst_add_r x t (tsubst_compose r s).
+Proof.
+  move=> u.
+  rewrite <- par_tsubst_tsubst.
+  repeat rewrite <- par_tsubst_par_tsubst.
+  rewrite <- par_tsubst_tsubst.
+  reflexivity.
+Qed.
+
+Lemma unify_aux_complete
   {p : unification_problem} {ACC : Acc unification_problem_order p}
   {s : TMap.t typeT} :
-    solves s p -> exists r : TMap.t typeT, unify_aux p ACC = ok r.
+    solves s p -> exists r : TMap.t typeT, unify_aux p ACC = ok r /\
+    (s =ex tsubst_compose r s).
 Proof.
   move: s.
   induction p using (well_founded_induction wf_unification_problem_order);
@@ -685,7 +986,11 @@ Proof.
   destruct p as [
     | [t u] p];
     simpl.
-  - eauto.
+  - exists (TMap.empty _).
+    constructor.
+  --- reflexivity. 
+  --- rewrite tsubst_compose_empty_l.
+      reflexivity.
   - destruct t;
     destruct u;
     inversion Hsol;
@@ -699,11 +1004,305 @@ Proof.
     try inversion H2;
     simpl in H2.
   --- simpl.
-Admitted.
+      symmetry in H2.
+      edestruct H as [r [Heq1 Heq2]].
+  ----- eapply unify_aux_tsubst_r.
+  ------- apply (par_tsubst_nooccur (s := s)).
+  --------- exact H2.
+  --------- discriminate.
+  ------- reflexivity.
+  ----- apply par_tsubst_tsubst_solves.
+  ------- exact H2.
+  ------- assumption.
+  ----- rewrite Heq1.
+        simpl.
+        exists (tsubst_add_r s0 natT r).
+        constructor.
+  ------- reflexivity.
+          Unshelve.
+          apply a.
+          apply unify_aux_tsubst_r;
+          auto.
+  ------- rewrite tsubst_compose_tsubst_add_r.
+          rewrite <- Heq2.
+          symmetry.
+          apply tsubst_add_r_absorbs.
+          assumption.
+  --- simpl.
+      symmetry in H2.
+      edestruct H as [r [Heq1 Heq2]].
+  ----- eapply unify_aux_tsubst_r.
+  ------- apply (par_tsubst_nooccur (s := s)).
+  --------- exact H2.
+  --------- discriminate.
+  ------- reflexivity.
+  ----- apply par_tsubst_tsubst_solves.
+  ------- exact H2.
+  ------- assumption.
+  ----- rewrite Heq1.
+        simpl.
+        exists (tsubst_add_r s0 boolT r).
+        constructor.
+  ------- reflexivity.
+          Unshelve.
+          apply a.
+          apply unify_aux_tsubst_r;
+          auto.
+  ------- rewrite tsubst_compose_tsubst_add_r.
+          rewrite <- Heq2.
+          symmetry.
+          apply tsubst_add_r_absorbs.
+          assumption.
+  --- simpl.
+      edestruct H as [r [Heq1 Heq2]].
+  ----- eapply unify_aux_tsubst_l.
+  ------- apply (par_tsubst_nooccur (s := s)).
+  --------- exact H2.
+  --------- discriminate.
+  ------- reflexivity.
+  ----- apply par_tsubst_tsubst_solves.
+  ------- exact H2.
+  ------- assumption.
+  ----- rewrite Heq1.
+        simpl.
+        exists (tsubst_add_r s0 natT r).
+        constructor.
+  ------- reflexivity.
+          Unshelve.
+          apply a.
+          apply unify_aux_tsubst_l;
+          auto.
+  ------- rewrite tsubst_compose_tsubst_add_r.
+          rewrite <- Heq2.
+          symmetry.
+          apply tsubst_add_r_absorbs.
+          assumption.
+  --- simpl.
+      edestruct H as [r [Heq1 Heq2]].
+  ----- eapply unify_aux_tsubst_l.
+  ------- apply (par_tsubst_nooccur (s := s)).
+  --------- exact H2.
+  --------- discriminate.
+  ------- reflexivity.
+  ----- apply par_tsubst_tsubst_solves.
+  ------- exact H2.
+  ------- assumption.
+  ----- rewrite Heq1.
+        simpl.
+        exists (tsubst_add_r s0 boolT r).
+        constructor.
+  ------- reflexivity.
+          Unshelve.
+          apply a.
+          apply unify_aux_tsubst_l;
+          auto.
+  ------- rewrite tsubst_compose_tsubst_add_r.
+          rewrite <- Heq2.
+          symmetry.
+          apply tsubst_add_r_absorbs.
+          assumption.
+  --- destruct (bool_as_bool_eq (TIdentFacts.eqb s0 s1)) as [Heq | Heq].
+  ----- apply (H _ (unify_aux_eq (eq_refl)) _ s).
+        assumption.
+  ----- edestruct H as [r [Heq1 Heq2]].
+  ------- apply (
+            unify_aux_tsubst_l
+              (x := s0)
+              (t := tvarT s1)
+              (q := p)
+          );
+          auto.
+  ------- apply par_tsubst_tsubst_solves.
+  --------- exact H2.
+  --------- assumption.
+  ------- exists (tsubst_add_r s0 (tvarT s1) r).
+          constructor.
+  --------- rewrite Heq1.
+            reflexivity.
+            Unshelve.
+            apply a.
+            apply unify_aux_tsubst_l;
+            auto.
+  --------- rewrite tsubst_compose_tsubst_add_r.
+            rewrite <- Heq2.
+            symmetry.
+            apply tsubst_add_r_absorbs.
+            assumption.
+  --- have Heq : occurs s0 (u1 ->T u2) = false.
+  ----- apply (par_tsubst_nooccur H2).
+        discriminate.
+  ----- simpl in Heq.
+        destruct (bool_as_bool_eq (occurs s0 u1 || occurs s0 u2)) as [Heq2 | Heq2].
+  ------- rewrite Heq in Heq2.
+          discriminate Heq2.
+  ------- edestruct H as [r [Heq3 Heq4]].
+  --------- apply (
+            unify_aux_tsubst_l
+              (x := s0)
+              (t := u1 ->T u2)
+              (q := p)
+            );
+            auto.
+  --------- apply par_tsubst_tsubst_solves.
+  ----------- exact H2.
+  ----------- assumption.
+  --------- exists (tsubst_add_r s0 (u1 ->T u2) r).
+            constructor.
+  ----------- rewrite Heq3.
+              reflexivity.
+              Unshelve.
+              apply a.
+              apply unify_aux_tsubst_l;
+              auto.
+  ----------- rewrite tsubst_compose_tsubst_add_r.
+              rewrite <- Heq4.
+              symmetry.
+              apply tsubst_add_r_absorbs.
+              assumption.
+  --- have Heq : occurs s0 (u1 *T u2) = false.
+  ----- apply (par_tsubst_nooccur H2).
+        discriminate.
+  ----- simpl in Heq.
+        destruct (
+          bool_as_bool_eq (occurs s0 u1 || occurs s0 u2)
+        ) as [Heq2 | Heq2].
+  ------- rewrite Heq in Heq2.
+          discriminate Heq2.
+  ------- edestruct H as [r [Heq3 Heq4]].
+  --------- apply (
+            unify_aux_tsubst_l
+              (x := s0)
+              (t := u1 *T u2)
+              (q := p)
+            );
+            auto.
+  --------- apply par_tsubst_tsubst_solves.
+  ----------- exact H2.
+  ----------- assumption.
+  --------- exists (tsubst_add_r s0 (u1 *T u2) r).
+            constructor.
+  ----------- rewrite Heq3.
+              reflexivity.
+              Unshelve.
+              apply a.
+              apply unify_aux_tsubst_l;
+              auto.
+  ----------- rewrite tsubst_compose_tsubst_add_r.
+              rewrite <- Heq4.
+              symmetry.
+              apply tsubst_add_r_absorbs.
+              assumption.
+  --- symmetry in H2.
+      have Heq : occurs s0 (t1 ->T t2) = false.
+  ----- apply (par_tsubst_nooccur H2).
+        discriminate.
+  ----- simpl in Heq.
+        destruct (
+          bool_as_bool_eq (occurs s0 t1 || occurs s0 t2)
+        ) as [Heq2 | Heq2].
+  ------- rewrite Heq in Heq2.
+          discriminate Heq2.
+  ------- edestruct H as [r [Heq3 Heq4]].
+  --------- apply (
+            unify_aux_tsubst_r
+              (x := s0)
+              (t := t1 ->T t2)
+              (q := p)
+            );
+            auto.
+  --------- apply par_tsubst_tsubst_solves.
+  ----------- exact H2.
+  ----------- assumption.
+  --------- exists (tsubst_add_r s0 (t1 ->T t2) r).
+            constructor.
+  ----------- rewrite Heq3.
+              reflexivity.
+              Unshelve.
+              apply a.
+              apply unify_aux_tsubst_r;
+              auto.
+  ----------- rewrite tsubst_compose_tsubst_add_r.
+              rewrite <- Heq4.
+              symmetry.
+              apply tsubst_add_r_absorbs.
+              assumption.
+  --- apply (H _ (unify_aux_funT (eq_refl)) _ s).
+      right.
+  ----- assumption.
+  ----- right;
+        assumption.
+--- symmetry in H2.
+      have Heq : occurs s0 (t1 ->T t2) = false.
+  ----- apply (par_tsubst_nooccur H2).
+        discriminate.
+  ----- simpl in Heq.
+        destruct (
+          bool_as_bool_eq (occurs s0 t1 || occurs s0 t2)
+        ) as [Heq2 | Heq2].
+  ------- rewrite Heq in Heq2.
+          discriminate Heq2.
+  ------- edestruct H as [r [Heq3 Heq4]].
+  --------- apply (
+            unify_aux_tsubst_r
+              (x := s0)
+              (t := t1 *T t2)
+              (q := p)
+            );
+            auto.
+  --------- apply par_tsubst_tsubst_solves.
+  ----------- exact H2.
+  ----------- assumption.
+  --------- exists (tsubst_add_r s0 (t1 *T t2) r).
+            constructor.
+  ----------- rewrite Heq3.
+              reflexivity.
+              Unshelve.
+              apply a.
+              apply unify_aux_tsubst_r;
+              auto.
+  ----------- rewrite tsubst_compose_tsubst_add_r.
+              rewrite <- Heq4.
+              symmetry.
+              apply tsubst_add_r_absorbs.
+              assumption.
+    --- apply (H _ (unify_aux_prodT (eq_refl)) _ s).
+        right.
+    ----- assumption.
+    ----- right;
+          assumption.
+Qed.
 
-Lemma unify_correct_1
+Theorem unify_sound
   {p : unification_problem} {s : TMap.t typeT} :
     unify p = ok s -> solves s p.
 Proof.
-  exact unify_aux_correct_1.
+  exact unify_aux_sound.
+Qed.
+
+Theorem unify_complete_1
+  {p : unification_problem} {s : TMap.t typeT} :
+    solves s p -> exists r : TMap.t typeT, unify p = ok r.
+Proof.
+  move=> Hsol.
+  destruct (
+    unify_aux_complete
+      (ACC := wf_unification_problem_order p) Hsol
+  ) as [r [Heq1 _]].
+  eauto.
+Qed.
+
+Theorem unify_complete_2
+  {p : unification_problem} {r s : TMap.t typeT} :
+    solves s p -> unify p = ok r -> r <|s s.
+Proof.
+  move=> Hsol Heq1.
+  destruct (
+    unify_aux_complete
+      (ACC := wf_unification_problem_order p) Hsol
+  ) as [q [Heq2 Heq3]].
+  exists s.
+  unfold unify in Heq1.
+  rewrite Heq1 in Heq2.
+  inversion Heq2.
+  assumption.
 Qed.

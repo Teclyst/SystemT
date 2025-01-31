@@ -10,7 +10,6 @@ Require Import Definitions.Reduction.
 Require Import Theorems.Substitution.
 Require Import Theorems.Reduction.
 Require Import Theorems.NormalForm.
-Require Import Morphisms.
 
 Require Import ssreflect ssrfun ssrbool.
 

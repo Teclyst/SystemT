@@ -1,4 +1,5 @@
 exception NameError of string
+exception UnknownError of string
 
 module StringMap = Map.Make (String)
 

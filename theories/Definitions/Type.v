@@ -34,9 +34,9 @@ Inductive typeT :=
   | funT : typeT -> typeT -> typeT
   | prodT : typeT -> typeT -> typeT.
 
-Notation "t ->T u" := (funT t u) (at level 80, right associativity) : system_t_type_scope.
+Notation "t ->T u" := (funT t u) (at level 35, right associativity) : system_t_type_scope.
 
-Notation "t *T u" := (prodT t u) (at level 65, left associativity) : system_t_type_scope.
+Notation "t *T u" := (prodT t u) (at level 34, left associativity) : system_t_type_scope.
 
 Fixpoint typeT_eqb (t u : typeT) :=
   match t, u with
@@ -82,7 +82,7 @@ Fixpoint par_tsubst (s : TMap.t typeT) (t : typeT) :=
     t
   end.
 
-Definition tsubst_compose (s h : TMap.t typeT) :=
+Definition tsubst_compose (s h : TMap.t typeT) : TMap.t typeT :=
   TMap.map2
     (fun opt1 opt2 =>
       match opt1, opt2 with
@@ -91,16 +91,33 @@ Definition tsubst_compose (s h : TMap.t typeT) :=
       | _, _ => None end)
     s h.
 
-Definition tsubst_add_l (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :=
+Definition tsubst_add_l (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
+    TMap.t typeT :=
   match TMap.find x s with
   | None => TMap.add x t (TMap.map (tsubst x t) s)
   | _ => TMap.map (tsubst x t) s
   end.
 
-Definition tsubst_add_r (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :=
+Definition tsubst_add_r (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
+    TMap.t typeT :=
   TMap.add x (par_tsubst s t) s.
 
-Definition unification_problem := list (typeT * typeT).
+Definition ext_equal (r s : TMap.t typeT) : Prop :=
+  forall t : typeT, par_tsubst r t = par_tsubst s t. 
+
+Notation "r =ex s" := (ext_equal r s) (at level 50) : system_t_type_scope.
+
+Definition tsubst_order_with_tsubst (q r s : TMap.t typeT) : Prop :=
+  s =ex tsubst_compose r q.
+
+Notation "r <|s( q ) s" := (tsubst_order_with_tsubst q r s) (at level 50).
+
+Definition tsubst_order (r s : TMap.t typeT) : Prop :=
+  exists q : TMap.t typeT, r <|s( q) s.
+
+Notation "r <|s s" := (tsubst_order r s) (at level 50).
+
+Definition unification_problem : Type := list (typeT * typeT).
 
 Fixpoint variable_set (t : typeT) :=
   match t with
@@ -159,36 +176,6 @@ Inductive unification_problem_order (p q : unification_problem) : Prop :=
     TSet.cardinal (problem_variable_set q) ->
     problem_size p < problem_size q ->
     unification_problem_order p q.
-
-Lemma wf_unification_problem_order :
-  well_founded unification_problem_order.
-Proof.
-  move=> p.
-  generalize (PeanoNat.Nat.le_refl (problem_size p)).
-  generalize (problem_size p) at -1.
-  generalize (PeanoNat.Nat.le_refl (TSet.cardinal (problem_variable_set p))).
-  generalize (TSet.cardinal (problem_variable_set p)) at -1.
-  move=> n.
-  move: p.
-  induction n;
-  move=> p Hle1 m;
-  move: p Hle1;
-  induction m;
-  move=> p Hle1 Hle2;
-  constructor;
-  move=> q [Hlt | Hle Hlt];
-  try Lia.lia.
-  - apply IHm;
-    Lia.lia.
-  - eapply IHn.
-  --- Lia.lia.
-  --- apply PeanoNat.Nat.le_refl.
-  - eapply IHn.
-  --- Lia.lia.
-  --- apply PeanoNat.Nat.le_refl.
-  - apply IHm;
-    Lia.lia.
-Qed.
 
 Inductive result (A B : Type) :=
   | ok : A -> result A B

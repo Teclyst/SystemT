@@ -53,7 +53,7 @@ rule token = parse
       NAT (Z.of_string s)
     }
   | [ '0' ] digit * {
-      raise (LexerError ("Unexpected leading zeros."))
+      raise (LexerError ("\x1B[3;31mUnexpected leading zeros.\x1B[0m"))
     }
   | '(' {
     LPAR
@@ -64,7 +64,7 @@ rule token = parse
   | symbchar + as id {
       match StringMap.find_opt id symbols with
       | Some t -> t
-      | _ -> raise (LexerError ("foo Unexpected token '" ^ id ^ "'."))
+      | _ -> raise (LexerError ("\x1B[3;31mUnexpected token \x1B[0;31m'" ^ id ^ "'\x1B[3;31m.\x1B[0m"))
     }
   | _ as c
-    { raise (LexerError ("Unexpected token '" ^ (String.make 1 c) ^ "'.")) }
+    { raise (LexerError ("\x1B[3;31mUnexpected token \x1B[0;31m'" ^ (String.make 1 c) ^ "'\x1B[3;31m.\x1B[0m")) }
