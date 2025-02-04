@@ -33,9 +33,9 @@ Proof.
   simpl;
   f_equal;
   auto.
-  destruct (TMap.find s0 s) eqn:Heq;
+  destruct (TMap.find n s) eqn:Heq;
   try reflexivity.
-  destruct (Hem s0 t).
+  destruct (Hem n t).
   apply TMap.find_2.
   assumption.
 Qed.
@@ -255,7 +255,7 @@ Proof.
   move=> Hnooccur.
   induction u;
   simpl;
-  try destruct (TIdentFacts.eqb x s) eqn:Heq;
+  try destruct (TIdentFacts.eqb x n) eqn:Heq;
   simpl;
   try TSetFacts.fsetdec.
   move=> Hin.
@@ -276,7 +276,7 @@ Lemma tsubst_subset {x : TIdent.t} {t u : typeT} :
 Proof.
   induction u;
   simpl;
-  try destruct (TIdentFacts.eqb x s) eqn:Heq;
+  try destruct (TIdentFacts.eqb x n) eqn:Heq;
   simpl;
   try TSetFacts.fsetdec.
 Qed.
@@ -297,7 +297,7 @@ Proof.
     try right;
     TSetFacts.fsetdec
   ).
-  destruct (TIdentFacts.eqb x s) eqn:Heq;
+  destruct (TIdentFacts.eqb x n) eqn:Heq;
   try left;
   try right;
   move/ TIdentFacts.eqb_spec in Heq;

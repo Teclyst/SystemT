@@ -135,8 +135,8 @@ Proof.
   eauto.
   unfold tsubst_add_r.
   rewrite TMapFacts.add_o.
-  destruct (TMapFacts.eq_dec x s0) as [Heq2 | Hneq2].
-  - fold (par_tsubst s (tvarT s0)).
+  destruct (TMapFacts.eq_dec x n) as [Heq2 | Hneq2].
+  - fold (par_tsubst s (tvarT n)).
     rewrite <- Heq2.
     assumption.
   - reflexivity. 
@@ -333,7 +333,7 @@ Fixpoint unify_aux
     unify_aux ((t, v) :: (u, w) :: q) (Acc_inv ACC (unify_aux_prodT Heq))
   | list_eq_cons _ (tvarT x, t) q Heq =>
     match bool_as_bool_eq (occurs x t) with
-    | bool_eq_true _ _  => err (tvarT_occurs x t)
+    | bool_eq_true _ _  => err (unification_error_tvarT_occurs x t)
     | bool_eq_false _ Heq2 =>
       result_map
         (tsubst_add_r x t)
@@ -343,7 +343,7 @@ Fixpoint unify_aux
     end
   | list_eq_cons _ (t, tvarT x) q Heq =>
     match bool_as_bool_eq (occurs x t) with
-    | bool_eq_true _ _  => err (tvarT_occurs x t)
+    | bool_eq_true _ _  => err (unification_error_tvarT_occurs x t)
     | bool_eq_false _ Heq2 =>
       result_map
         (tsubst_add_r x t)
@@ -355,7 +355,7 @@ Fixpoint unify_aux
   | list_eq_cons _ (natT, natT) q Heq =>
      unify_aux q (Acc_inv ACC (unify_aux_eq Heq))
   | list_eq_cons _ (t, u) q Heq =>
-    err (different_constructors t u)
+    err (unification_error_different_constructors t u)
   end.
 
 Definition unify (p : unification_problem) :
@@ -454,7 +454,7 @@ Proof.
   ------- eapply unify_aux_eq.
           reflexivity.
   ------- exact Heq.
-  --- destruct (bool_as_bool_eq (TIdentFacts.eqb s0 s1));
+  --- destruct (bool_as_bool_eq (TIdentFacts.eqb n n0));
       constructor.
   ----- simpl;
         unfold unifies;
@@ -490,7 +490,7 @@ Proof.
         eapply H; eauto.
         apply unify_aux_tsubst_l;
         eauto.
-  --- destruct (bool_as_bool_eq (occurs s0 u1 || occurs s0 u2));
+  --- destruct (bool_as_bool_eq (occurs n u1 || occurs n u2));
       try (
         inversion Heq;
         fail
@@ -519,7 +519,7 @@ Proof.
         eauto.
         apply unify_aux_tsubst_l;
         eauto.
-  --- destruct (bool_as_bool_eq (occurs s0 u1 || occurs s0 u2));
+  --- destruct (bool_as_bool_eq (occurs n u1 || occurs n u2));
       try (
         inversion Heq;
         fail
@@ -548,7 +548,7 @@ Proof.
         eauto.
         apply unify_aux_tsubst_l;
         eauto.
-  --- destruct (bool_as_bool_eq (occurs s0 t1 || occurs s0 t2));
+  --- destruct (bool_as_bool_eq (occurs n t1 || occurs n t2));
       try (
         inversion Heq;
         fail
@@ -592,7 +592,7 @@ Proof.
           f_equal;
           assumption.
   ------- assumption. 
-  --- destruct (bool_as_bool_eq (occurs s0 t1 || occurs s0 t2));
+  --- destruct (bool_as_bool_eq (occurs n t1 || occurs n t2));
       try (
         inversion Heq;
         fail
@@ -649,7 +649,7 @@ Proof.
   f_equal;
   auto.
   rewrite TMapFacts.add_o.
-  destruct (TMapFacts.eq_dec x s0).
+  destruct (TMapFacts.eq_dec x n).
   - repeat rewrite <- e.
     fold (par_tsubst s (tvarT x)).
     symmetry.
@@ -700,7 +700,7 @@ Proof.
   ------- assumption.
   ----- rewrite Heq1.
         simpl.
-        exists (tsubst_add_r s0 natT r).
+        exists (tsubst_add_r n natT r).
         constructor.
   ------- reflexivity.
           Unshelve.
@@ -725,7 +725,7 @@ Proof.
   ------- assumption.
   ----- rewrite Heq1.
         simpl.
-        exists (tsubst_add_r s0 boolT r).
+        exists (tsubst_add_r n boolT r).
         constructor.
   ------- reflexivity.
           Unshelve.
@@ -749,7 +749,7 @@ Proof.
   ------- assumption.
   ----- rewrite Heq1.
         simpl.
-        exists (tsubst_add_r s0 natT r).
+        exists (tsubst_add_r n natT r).
         constructor.
   ------- reflexivity.
           Unshelve.
@@ -773,7 +773,7 @@ Proof.
   ------- assumption.
   ----- rewrite Heq1.
         simpl.
-        exists (tsubst_add_r s0 boolT r).
+        exists (tsubst_add_r n boolT r).
         constructor.
   ------- reflexivity.
           Unshelve.
@@ -785,21 +785,21 @@ Proof.
           symmetry.
           apply tsubst_add_r_absorbs.
           assumption.
-  --- destruct (bool_as_bool_eq (TIdentFacts.eqb s0 s1)) as [Heq | Heq].
+  --- destruct (bool_as_bool_eq (TIdentFacts.eqb n n0)) as [Heq | Heq].
   ----- apply (H _ (unify_aux_eq (eq_refl)) _ s).
         assumption.
   ----- edestruct H as [r [Heq1 Heq2]].
   ------- apply (
             unify_aux_tsubst_l
-              (x := s0)
-              (t := tvarT s1)
+              (x := n)
+              (t := tvarT n0)
               (q := p)
           );
           auto.
   ------- apply par_tsubst_tsubst_solves.
   --------- exact H2.
   --------- assumption.
-  ------- exists (tsubst_add_r s0 (tvarT s1) r).
+  ------- exists (tsubst_add_r n (tvarT n0) r).
           constructor.
   --------- rewrite Heq1.
             reflexivity.
@@ -812,17 +812,17 @@ Proof.
             symmetry.
             apply tsubst_add_r_absorbs.
             assumption.
-  --- have Heq : occurs s0 (u1 ->T u2) = false.
+  --- have Heq : occurs n (u1 ->T u2) = false.
   ----- apply (par_tsubst_nooccur H2).
         discriminate.
   ----- simpl in Heq.
-        destruct (bool_as_bool_eq (occurs s0 u1 || occurs s0 u2)) as [Heq2 | Heq2].
+        destruct (bool_as_bool_eq (occurs n u1 || occurs n u2)) as [Heq2 | Heq2].
   ------- rewrite Heq in Heq2.
           discriminate Heq2.
   ------- edestruct H as [r [Heq3 Heq4]].
   --------- apply (
             unify_aux_tsubst_l
-              (x := s0)
+              (x := n)
               (t := u1 ->T u2)
               (q := p)
             );
@@ -830,7 +830,7 @@ Proof.
   --------- apply par_tsubst_tsubst_solves.
   ----------- exact H2.
   ----------- assumption.
-  --------- exists (tsubst_add_r s0 (u1 ->T u2) r).
+  --------- exists (tsubst_add_r n (u1 ->T u2) r).
             constructor.
   ----------- rewrite Heq3.
               reflexivity.
@@ -843,19 +843,19 @@ Proof.
               symmetry.
               apply tsubst_add_r_absorbs.
               assumption.
-  --- have Heq : occurs s0 (u1 *T u2) = false.
+  --- have Heq : occurs n (u1 *T u2) = false.
   ----- apply (par_tsubst_nooccur H2).
         discriminate.
   ----- simpl in Heq.
         destruct (
-          bool_as_bool_eq (occurs s0 u1 || occurs s0 u2)
+          bool_as_bool_eq (occurs n u1 || occurs n u2)
         ) as [Heq2 | Heq2].
   ------- rewrite Heq in Heq2.
           discriminate Heq2.
   ------- edestruct H as [r [Heq3 Heq4]].
   --------- apply (
             unify_aux_tsubst_l
-              (x := s0)
+              (x := n)
               (t := u1 *T u2)
               (q := p)
             );
@@ -863,7 +863,7 @@ Proof.
   --------- apply par_tsubst_tsubst_solves.
   ----------- exact H2.
   ----------- assumption.
-  --------- exists (tsubst_add_r s0 (u1 *T u2) r).
+  --------- exists (tsubst_add_r n (u1 *T u2) r).
             constructor.
   ----------- rewrite Heq3.
               reflexivity.
@@ -877,19 +877,19 @@ Proof.
               apply tsubst_add_r_absorbs.
               assumption.
   --- symmetry in H2.
-      have Heq : occurs s0 (t1 ->T t2) = false.
+      have Heq : occurs n (t1 ->T t2) = false.
   ----- apply (par_tsubst_nooccur H2).
         discriminate.
   ----- simpl in Heq.
         destruct (
-          bool_as_bool_eq (occurs s0 t1 || occurs s0 t2)
+          bool_as_bool_eq (occurs n t1 || occurs n t2)
         ) as [Heq2 | Heq2].
   ------- rewrite Heq in Heq2.
           discriminate Heq2.
   ------- edestruct H as [r [Heq3 Heq4]].
   --------- apply (
             unify_aux_tsubst_r
-              (x := s0)
+              (x := n)
               (t := t1 ->T t2)
               (q := p)
             );
@@ -897,7 +897,7 @@ Proof.
   --------- apply par_tsubst_tsubst_solves.
   ----------- exact H2.
   ----------- assumption.
-  --------- exists (tsubst_add_r s0 (t1 ->T t2) r).
+  --------- exists (tsubst_add_r n (t1 ->T t2) r).
             constructor.
   ----------- rewrite Heq3.
               reflexivity.
@@ -916,19 +916,19 @@ Proof.
   ----- right;
         assumption.
   --- symmetry in H2.
-      have Heq : occurs s0 (t1 ->T t2) = false.
+      have Heq : occurs n (t1 ->T t2) = false.
   ----- apply (par_tsubst_nooccur H2).
         discriminate.
   ----- simpl in Heq.
         destruct (
-          bool_as_bool_eq (occurs s0 t1 || occurs s0 t2)
+          bool_as_bool_eq (occurs n t1 || occurs n t2)
         ) as [Heq2 | Heq2].
   ------- rewrite Heq in Heq2.
           discriminate Heq2.
   ------- edestruct H as [r [Heq3 Heq4]].
   --------- apply (
             unify_aux_tsubst_r
-              (x := s0)
+              (x := n)
               (t := t1 *T t2)
               (q := p)
             );
@@ -936,7 +936,7 @@ Proof.
   --------- apply par_tsubst_tsubst_solves.
   ----------- exact H2.
   ----------- assumption.
-  --------- exists (tsubst_add_r s0 (t1 *T t2) r).
+  --------- exists (tsubst_add_r n (t1 *T t2) r).
             constructor.
   ----------- rewrite Heq3.
               reflexivity.

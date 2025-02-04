@@ -7,9 +7,9 @@ Require Import ssreflect ssrfun ssrbool.
 Declare Scope system_t_type_scope.
 Open Scope system_t_type_scope.
 
-Module TIdent <: IDENT := StringIdent.
+Module TIdent <: IDENT := NatIdent.
 
-Module TSet := StringSet.
+Module TSet := NatSet.
 
 Module TSetFacts.
 
@@ -21,7 +21,7 @@ Module TSetFacts.
 
 End TSetFacts.
 
-Module TMap := StringMap.
+Module TMap := NatMap.
 
 Module TMapFacts := FSets.FMapFacts.Facts TMap.
 
@@ -211,10 +211,10 @@ Definition result_map {A B C : Type} (f : A -> B) (r : result A C) :
   | err b => err b
   end.
 
-Inductive unification_error : Type :=
-  | different_constructors :
+Variant unification_error : Type :=
+  | unification_error_different_constructors :
     typeT -> typeT -> unification_error
-  | tvarT_occurs :
+  | unification_error_tvarT_occurs :
     TIdent.t -> typeT -> unification_error.
 
 Definition unifies (s : TMap.t typeT) (t u : typeT) : Prop :=

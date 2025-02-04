@@ -132,29 +132,29 @@ Module IdentFacts (Import Ident : IDENT)
     destruct (new_spec _ Hmap).
   Qed.
 
-  Definition set_new_map (s t : IdentSet.t) : IdentMap.t Ident.t :=
-    (IdentSet.fold
+  Definition new_map (s t : list Ident.t) : IdentMap.t Ident.t :=
+    (List.fold_right
       (fun x acc =>
-        let y := set_new acc.2 in
-        (IdentMap.add x y acc.1, IdentSet.add y acc.2))
-      t
-      (IdentMap.empty Ident.t, IdentSet.union s t)).1.
+        let y := new acc.2 in
+        (IdentMap.add x y acc.1, y :: acc.2))
+      (IdentMap.empty Ident.t, s ++ t)
+      t).1.
 
-  Lemma set_new_map_spec_1 {s t : IdentSet.t} {x y : Ident.t} :
-      IdentMap.MapsTo x y (set_new_map s t) ->
-      ~ IdentSet.In y (IdentSet.union s t).
+  Lemma new_map_spec_1 {s t : list Ident.t} {x y : Ident.t} :
+      IdentMap.MapsTo x y (new_map s t) ->
+      ~ In y (s ++ t).
   Proof.
   Admitted.
 
-  Lemma set_new_map_spec_2 {s t : IdentSet.t} {w x y z : Ident.t} :
-      IdentMap.MapsTo w x (set_new_map s t) ->
-      IdentMap.MapsTo y z (set_new_map s t) -> x = z ->
+  Lemma set_new_map_spec_2 {s t : list Ident.t} {w x y z : Ident.t} :
+      IdentMap.MapsTo w x (new_map s t) ->
+      IdentMap.MapsTo y z (new_map s t) -> x = z ->
       w = y.
   Proof.
   Admitted.
 
-  Lemma set_new_map_spec_3 {s t : IdentSet.t} {x : Ident.t} :
-      IdentSet.In x s -> IdentMap.In x (set_new_map s t).
+  Lemma set_new_map_spec_3 {s t : list Ident.t} {x : Ident.t} :
+      In x s -> IdentMap.In x (new_map s t).
   Proof.
   Admitted.
 
