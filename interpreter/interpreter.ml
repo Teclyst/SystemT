@@ -8,13 +8,13 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
       match Parser.entry Lexer.token buf with
       | Ast.Expr e -> (
           let e = Ast.convert fenv [] e in
-          match CoqInterpreter.type_check {bmap= []; fmap= tenv} e with
+          match CoqInterpreter.type_check tenv e with
           | Ok t ->
               let e = CoqInterpreter.par_fsubst fenv e in
               let e = CoqInterpreter.reduce e in
               Format.fprintf Format.std_formatter
                 "@[<hov>\x1B[3;34m_ :@,\
-                 \x1B[3;32m %a\x1B[3;34m =\x1B[0m@ %a @]\n"
+                 \x1B[0;32m %a\x1B[3;34m =\x1B[0m@ %a @]\n"
                 Pretty.printf_typeT_FunT t
                 (Pretty.printf_termT_expr Z.zero)
                 e ;
@@ -23,13 +23,13 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
           | Error error -> raise (Util.TypeError error) )
       | Ast.Bind (x, e) -> (
           let e = Ast.convert fenv [] e in
-          match CoqInterpreter.type_check {bmap= []; fmap= tenv} e with
+          match CoqInterpreter.type_check tenv e with
           | Ok t ->
               let e = CoqInterpreter.par_fsubst fenv e in
               let e = CoqInterpreter.reduce e in
               Format.fprintf Format.std_formatter
                 "@[<hov>\x1B[3;34mval\x1B[0m %a\x1B[3;34m :@,\
-                 \x1B[3;32m %a\x1B[3;34m =\x1B[0m@ %a @]\n"
+                 \x1B[0;32m %a\x1B[3;34m =\x1B[0m@ %a @]\n"
                 Pretty.ident x Pretty.printf_typeT_FunT t
                 (Pretty.printf_termT_expr Z.zero)
                 e ;
@@ -44,11 +44,6 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
     with
   | Lexer.LexerError s -> print_endline ("\x1B[1;31mLexing Error!\n\x1B[0m" ^ s)
   | Parser.Error -> print_endline "\x1B[1;31mSyntax Error!\x1B[0m"
-  | Util.NameError s ->
-      print_endline
-        ( "\x1B[1;31mSyntax Error!\n\x1B[0;31m'" ^ s
-        ^ "'\x1B[3;31m is unbound, yet starts with a \
-           \x1B[0;31m'_'\x1B[3;31m.\x1B[0m" )
   | Util.UnknownError s ->
       print_endline
         ( "\x1B[1;31mUnknown Reference!\n\x1B[0;3;31mUnknown value \x1B[0;31m'"
@@ -71,7 +66,7 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
          \x1B[0;31m%a\x1B[3;31m.\n\
          \x1B[0m@]"
         Pretty.ident
-        (Z.to_string (Pretty.nat_to_zt x))
+        (Pretty.zt_to_alphabet (Pretty.nat_to_zt x))
         Pretty.printf_typeT_FunT t ) ;
   loop fenv tenv
 

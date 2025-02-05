@@ -61,6 +61,18 @@ app_expr:
   | e = app_expr; f = atom {
     App (e, f)
   }
+    | PR1; e = atom {
+    Pl e
+  }
+  | PR2; e = atom {
+    Pr e
+  }
+  | S; e = atom {
+    S e
+  }
+  | REC; e = atom; f = atom; g = atom {
+    Rec (e, f, g)
+  }
 
 expr:
   | e = app_expr {
@@ -69,24 +81,11 @@ expr:
   | FUN; p = IDENT *; ARROW; e = expr {
     List.fold_right (fun x e -> Abs(x, e)) p e
   } 
-  | PR1; e = atom {
-    Pl e
-  }
-  | PR2; e = atom {
-    Pr e
-  }
-
   | IF; e = expr; THEN; f = expr; ELSE; g = expr {
     Ite (e, f, g)
   }
-  | S; e = atom {
-    S e
-  }
   | e = expr; ADD; f = expr {
     Add (e, f)
-  }
-  | REC; e = atom; f = atom; g = atom {
-    Rec (e, f, g)
   }
 
 entry:

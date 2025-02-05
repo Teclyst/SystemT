@@ -24,9 +24,8 @@ let rec convert (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t) (benv : vide
       match List.find_index (( = ) x) benv with
       | Some n -> CoqInterpreter.BvarT (Util.int_to_nat n)
       | _ ->
-          match x.[0] = '_', CoqInterpreter.FMap.mem (Util.string_to_char_list x) fenv with
-          | true, _ -> raise (Util.NameError x)
-          | _, true -> CoqInterpreter.FvarT (Util.string_to_char_list x)
+          match CoqInterpreter.FMap.mem (Util.string_to_char_list x) fenv with
+          | true -> CoqInterpreter.FvarT (Util.string_to_char_list x)
           | _ -> raise (Util.UnknownError x) )
   | Abs (x, e) -> AbsT (convert fenv (x :: benv) e)
   | App (e, f) -> CoqInterpreter.AppT (convert fenv benv e, convert fenv benv f)

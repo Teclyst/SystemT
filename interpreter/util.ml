@@ -1,4 +1,3 @@
-exception NameError of string
 exception UnknownError of string
 exception TypeError of CoqInterpreter.type_error
 

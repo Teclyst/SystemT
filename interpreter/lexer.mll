@@ -24,7 +24,7 @@
     StringMap.of_list [
       ("+", ADD);
       ("=", EQ);
-      ("->", ARROW);
+      ("=>", ARROW);
       (",", COMMA)
     ]
 
@@ -33,7 +33,7 @@
 let digit = ['0' - '9']
 let letter = ['a' - 'z' 'A' - 'Z' '_']
 let ident = letter (letter | digit) *
-let symbchar = [',' '-' '>' '=' '+']
+let symbchar = [',' '>' '=' '+']
 
 rule token = parse
   | [' ' '\t' '\n'] +

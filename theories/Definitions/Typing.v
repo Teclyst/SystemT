@@ -231,19 +231,16 @@ Fixpoint build_unification_problem
     end
   end.
 
-Definition type_check (G : Context.t) (e : termT) :
+Definition type_check (tenv : FMap.t typeT) (e : termT) :
     result typeT type_error :=
-  let used_tvars :=
-    TSet.elements
-      (fold_left
-        (fun acc t => TSet.union acc (variable_set t))
-        (bmap G)
-        TSet.empty) in
-  match build_unification_problem used_tvars G e with
+  match
+    build_unification_problem
+      nil {| Context.bmap := nil; Context.fmap := tenv |} e
+  with
   | Some (p, _) =>
     match unify p with
     | ok s =>
-      ok (tvarT (TIdent.new used_tvars) >> s)
+      ok (tvarT (TIdent.new nil) >> s)
     | err error =>
       err (type_error_unification_error error)
     end

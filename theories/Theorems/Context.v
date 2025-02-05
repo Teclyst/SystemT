@@ -82,6 +82,16 @@ Proof.
     destruct (FMap.empty_1 Hmap).
 Qed.
 
+Lemma context_par_tsubst_bpush
+  {s : TMap.t typeT} {G : t} {t : typeT} :
+    context_par_tsubst s (bpush t G) =
+    bpush (t >> s) (context_par_tsubst s G).
+Proof.
+  unfold bpush.
+  unfold context_par_tsubst.
+  reflexivity.
+Qed.
+
 Lemma context_par_tsubst_context_order_with_tsubst
   {s : TMap.t typeT} {G : t} {t : typeT} :
     G >><c(s) context_par_tsubst s G.
