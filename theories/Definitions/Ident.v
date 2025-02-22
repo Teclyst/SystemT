@@ -37,6 +37,8 @@ Module IdentFacts (Import Ident : IDENT)
 
   Include OrderedTypeFacts E.
 
+  Module IdentMapFacts := FSets.FMapFacts.Facts IdentMap.
+
   Lemma eqb_spec {x y : t} : Bool.reflect (eq x y) (eqb x y).
   Proof.
     destruct eqb eqn:Heq;
@@ -132,6 +134,13 @@ Module IdentFacts (Import Ident : IDENT)
     destruct (new_spec _ Hmap).
   Qed.
 
+  Definition new_map_aux_list (s t : list Ident.t) : list Ident.t :=
+    List.fold_right
+      (fun _ l =>
+        (new l) :: l)
+      (s ++ t)
+      t.
+
   Definition new_map (s t : list Ident.t) : IdentMap.t Ident.t :=
     (List.fold_right
       (fun x acc =>
@@ -140,23 +149,320 @@ Module IdentFacts (Import Ident : IDENT)
       (IdentMap.empty Ident.t, s ++ t)
       t).1.
 
+  Lemma new_map_aux_list_1 {s t : list Ident.t} {x : Ident.t} :
+      In x s -> In x (new_map_aux_list s t).
+  Proof.
+    move: s.
+    induction t;
+    move=> s;
+    unfold new_map_aux_list;
+    simpl.
+    - rewrite app_nil_r.
+      auto.
+    - right.
+      replace (s ++ a :: t) with ((s ++ a :: nil) ++ t).
+      fold (new_map_aux_list (s ++ a :: nil) t).
+      apply IHt.
+      apply in_or_app.
+      left.
+      assumption.
+      rewrite <- app_assoc.
+      reflexivity.
+  Qed.
+
+  Lemma new_map_aux_list_2 {s t : list Ident.t} {x : Ident.t} :
+      In x t -> In x (new_map_aux_list s t).
+  Proof.
+    move: s.
+    induction t;
+    move=> s;
+    unfold new_map_aux_list;
+    simpl.
+    - contradiction.
+    - move=> [Heq | Hin];
+      replace (s ++ a :: t) with ((s ++ a :: nil) ++ t);
+      fold (new_map_aux_list (s ++ a :: nil) t);
+      try (
+        rewrite <- app_assoc;
+        reflexivity;
+        fail
+      ).
+    --- right.
+        apply new_map_aux_list_1.
+        apply in_or_app.
+        right.
+        left.
+        assumption.
+    --- right.
+        eauto.
+  Qed.
+
+  Lemma new_map_aux_1 {s t : list Ident.t} :
+       (List.fold_right
+      (fun x acc =>
+        (IdentMap.add x (new acc.2) acc.1, (new acc.2) :: acc.2))
+      (IdentMap.empty Ident.t, s ++ t)
+      t).2 = new_map_aux_list s t.
+  Proof.
+    move: s.
+    induction t;
+    unfold new_map_aux_list.
+    - auto.
+    - move=> s.
+      simpl.
+      f_equal.
+    --- f_equal.
+        replace (s ++ a :: t) with ((s ++ a :: nil) ++ t).
+    ----- fold (new_map_aux_list (s ++ a :: nil) t).
+          auto.
+    ----- rewrite <- app_assoc.
+          reflexivity.
+    --- replace (s ++ a :: t) with ((s ++ a :: nil) ++ t).
+    ----- fold (new_map_aux_list (s ++ a :: nil) t).
+          auto.
+    ----- rewrite <- app_assoc.
+          reflexivity.
+  Qed.
+
+  Lemma new_map_aux_2 {s t : list Ident.t} {x : Ident.t} :
+      (new_map s (x :: t)) =
+      IdentMap.add x (new (new_map_aux_list (s ++ x :: nil) t))
+        (new_map (s ++ x :: nil) t).
+  Proof.
+    unfold new_map.
+    simpl.
+    replace (s ++ x :: t) with ((s ++ x :: nil) ++ t);
+    try (rewrite <- app_assoc;
+    reflexivity;
+    fail).
+    rewrite new_map_aux_1.
+    reflexivity.
+  Qed.
+
   Lemma new_map_spec_1 {s t : list Ident.t} {x y : Ident.t} :
       IdentMap.MapsTo x y (new_map s t) ->
       ~ In y (s ++ t).
   Proof.
-  Admitted.
+    move: s.
+    induction t;
+    move=> s Hmap Hin1.
+    - unfold new_map in Hmap.
+      simpl in Hmap.
+      exact (IdentMap.empty_1 Hmap).
+    - rewrite new_map_aux_2 in Hmap.
+      apply in_app_or in Hin1.
+      destruct (eqb a x) eqn:Heq1;
+      move/ eqb_spec in Heq1.
+    --- have foo : Some y = Some (new (new_map_aux_list (s ++ a :: nil) t)).
+        transitivity (IdentMap.find x (IdentMap.add a (new (new_map_aux_list (s ++ a :: nil) t))
+(new_map (s ++ a :: nil) t))).
+    ----- symmetry.
+          auto using IdentMap.find_1.
+    ----- apply IdentMap.find_1.
+          rewrite Heq1.
+          apply IdentMap.add_1.
+          reflexivity.
+    ----- inversion foo.
+          apply (new_spec (new_map_aux_list (s ++ a :: nil) t)).
+          rewrite <- H0.
+          destruct Hin1 as [Hin1 | Hin1].
+    ------- eauto using new_map_aux_list_1, in_or_app.
+    ------- apply in_inv in Hin1.
+            destruct Hin1 as [Heq2 | Hin1].
+    --------- apply new_map_aux_list_1.
+              apply in_or_app.
+              right.
+              left.
+              assumption.
+    --------- eauto using new_map_aux_list_2.
+    --- apply IdentMap.add_3 in Hmap;
+        try assumption.
+        apply (IHt (s ++ a :: nil) Hmap).
+        apply in_or_app.
+        destruct Hin1 as [Hin1 | Hin1].
+    ----- eauto using in_or_app.
+    ----- apply in_inv in Hin1.
+          destruct Hin1 as [Heq2 | Hin1].
+    ------- left. 
+            apply in_or_app.
+            right.
+            left.
+            assumption.
+    ------- eauto using new_map_aux_list_2.
+  Qed.
 
-  Lemma set_new_map_spec_2 {s t : list Ident.t} {w x y z : Ident.t} :
-      IdentMap.MapsTo w x (new_map s t) ->
-      IdentMap.MapsTo y z (new_map s t) -> x = z ->
-      w = y.
+  Lemma new_map_spec_aux_3 {s t : list Ident.t} {x : Ident.t} :
+      IdentMap.In x (new_map s t) -> In x t.
   Proof.
-  Admitted.
+    move: s.
+    induction t;
+    move=> s Hin.
+    - destruct Hin as [y Hmap].
+      unfold new_map in Hmap.
+      simpl in Hmap.
+      destruct (IdentMap.empty_1 Hmap).
+    - simpl.
+      rewrite new_map_aux_2 in Hin.
+      rewrite IdentMapFacts.add_in_iff in Hin.
+      destruct Hin as [Heq | Hin];
+      eauto.
+  Qed. 
+
+  Lemma new_map_spec_2 {s t : list Ident.t} {x y z : Ident.t} :
+      IdentMap.MapsTo x z (new_map s t) ->
+      IdentMap.MapsTo y z (new_map s t) ->
+      x = y.
+  Proof.
+    move: s.
+    induction t;
+    move=> s Hmap1 Hmap2.
+    - unfold new_map in Hmap1;
+      simpl in Hmap1.
+      destruct (IdentMap.empty_1 Hmap1).
+    - rewrite new_map_aux_2 in Hmap1, Hmap2.
+      destruct (eqb x y) eqn:Heq1;
+      move/ eqb_spec in Heq1;
+      try assumption.
+      apply IdentMap.find_1 in Hmap1, Hmap2.
+      destruct (eqb x a) eqn:Heq3;
+      move/ eqb_spec in Heq3;
+      destruct (eqb y a) eqn:Heq4;
+      move/ eqb_spec in Heq4.
+    --- destruct Heq1.
+        transitivity a;
+        auto.
+    --- rewrite IdentMapFacts.add_eq_o in Hmap1.
+        symmetry.
+        assumption.
+        rewrite IdentMapFacts.add_neq_o in Hmap2.
+        auto.
+        inversion Hmap1.
+        destruct (new_spec (new_map_aux_list (s ++ a :: nil) t)).
+        rewrite H0.
+        rewrite <- Heq3.
+        rewrite <- Heq3 in Hmap1, Hmap2, H0.
+        clear a Heq3 Heq4 Hmap1.
+        clear IHt.
+        clear H0.
+        move: Hmap2.
+        generalize (s ++ x :: nil).
+        clear x Heq1 s.
+        induction t;
+        move=> s Hmap2.
+    ----- have foo : In y nil.
+          apply (new_map_spec_aux_3 (s := s)).
+          exists z.
+          eauto using IdentMap.find_2.
+          destruct foo.
+    ----- rewrite new_map_aux_2 in Hmap2.
+          destruct (eqb y a) eqn:Heq2;
+          move/ eqb_spec in Heq2.
+    ------- rewrite IdentMapFacts.add_eq_o in Hmap2.
+            symmetry.
+            assumption.
+            inversion Hmap2.
+            unfold new_map_aux_list.
+            simpl.
+            left;
+            f_equal.
+            f_equal.
+            rewrite <- app_assoc.
+            reflexivity.
+    ------- unfold new_map_aux_list.
+            simpl fold_right.
+            replace (s ++ a :: t) with ((s ++ (a :: nil)) ++ t).
+    --------- fold (new_map_aux_list (s ++ a :: nil) t).
+              right.
+              apply IHt;
+              rewrite IdentMapFacts.add_neq_o in Hmap2;
+              eauto.
+    --------- rewrite <- app_assoc.
+              reflexivity.
+    --- rewrite IdentMapFacts.add_eq_o in Hmap2.
+        symmetry.
+        assumption.
+        rewrite IdentMapFacts.add_neq_o in Hmap1.
+        auto.
+        inversion Hmap2.
+        destruct (new_spec (new_map_aux_list (s ++ a :: nil) t)).
+        rewrite H0.
+        rewrite <- Heq4.
+        rewrite <- Heq4 in Hmap1, Hmap2, H0.
+        clear a Heq3 Heq4 Hmap2.
+        clear IHt.
+        clear H0.
+        move: Hmap1.
+        generalize (s ++ y :: nil).
+        clear y Heq1 s.
+        induction t;
+        move=> s Hmap1.
+    ----- have foo : In x nil.
+          apply (new_map_spec_aux_3 (s := s)).
+          exists z.
+          eauto using IdentMap.find_2.
+          destruct foo.
+    ----- rewrite new_map_aux_2 in Hmap1.
+          destruct (eqb x a) eqn:Heq2;
+          move/ eqb_spec in Heq2.
+    ------- rewrite IdentMapFacts.add_eq_o in Hmap1.
+            symmetry.
+            assumption.
+            inversion Hmap1.
+            unfold new_map_aux_list.
+            simpl.
+            left;
+            f_equal.
+            f_equal.
+            rewrite <- app_assoc.
+            reflexivity.
+    ------- unfold new_map_aux_list.
+            simpl fold_right.
+            replace (s ++ a :: t) with ((s ++ (a :: nil)) ++ t).
+    --------- fold (new_map_aux_list (s ++ a :: nil) t).
+              right.
+              apply IHt;
+              rewrite IdentMapFacts.add_neq_o in Hmap1;
+              eauto.
+    --------- rewrite <- app_assoc.
+              reflexivity.
+    --- rewrite IdentMapFacts.add_neq_o in Hmap1;
+        rewrite IdentMapFacts.add_neq_o in Hmap2;
+        eauto using IdentMap.find_2.
+  Qed.    
 
   Lemma set_new_map_spec_3 {s t : list Ident.t} {x : Ident.t} :
-      In x s -> IdentMap.In x (new_map s t).
+      In x t -> IdentMap.In x (new_map s t).
   Proof.
-  Admitted.
+    move: s.
+    induction t;
+    move=> s Hin.
+    - inversion Hin.
+    - simpl.
+      unfold new_map in IHt.
+      simpl in IHt.
+      unfold new_map.
+      simpl.
+      simpl in Hin.
+      destruct (eqb a x) eqn:Heq1;
+      move/ eqb_spec in Heq1.
+    --- exists ((new
+        (fold_right
+        (fun (x0 : IdentMap.key) (acc : IdentMap.t Ident.t * list Ident.t) =>
+        (IdentMap.add x0 (new acc.2) acc.1, new acc.2 :: acc.2))
+        (IdentMap.empty Ident.t, s ++ a :: t) t).2)).
+        apply IdentMap.add_1.
+        assumption.
+    --- destruct Hin as [Heq | Hin];
+        try contradiction.
+        destruct (IHt (s ++ a :: nil)) as [y Hmap];
+        try assumption.
+        exists y.
+        apply IdentMap.add_2.
+        assumption.
+        rewrite <- app_assoc in Hmap.
+        simpl in Hmap.
+        assumption.
+Qed.
 
 End IdentFacts.
 

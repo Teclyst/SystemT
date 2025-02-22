@@ -16,6 +16,30 @@ let rec zt_to_alphabet n =
       let q, r = div_rem (n - one) (of_int 26) in
       zt_to_alphabet q ^ String.make 1 (Char.chr (Stdlib.( + ) 97 (to_int r)))
 
+      let rename_type t =
+        let rec rename_type_aux (t, s, n) =
+          match t with
+          | CoqInterpreter.TvarT x -> (
+              match CoqInterpreter.TMap.find x s with
+              | Some y -> (CoqInterpreter.TvarT y, s, n)
+              | None ->
+                  ( CoqInterpreter.TvarT (CoqInterpreter.S n)
+                  , CoqInterpreter.TMap.add x (CoqInterpreter.S n) s,
+                  CoqInterpreter.S n
+                  ) )
+          | CoqInterpreter.FunT (t, u) ->
+              let t, s, n = rename_type_aux (t, s, n) in
+              let u, s, n = rename_type_aux (u, s, n) in
+              (CoqInterpreter.FunT (t, u), s, n)
+          | CoqInterpreter.ProdT (t, u) ->
+              let t, s, n = rename_type_aux (t, s, n) in
+              let u, s, n = rename_type_aux (u, s, n) in
+              (CoqInterpreter.ProdT (t, u), s, n)
+          | _ -> (t, s, n)
+        in
+        let t, _, _ = rename_type_aux (t, CoqInterpreter.TMap.empty, O) in
+        t
+
 let rec termT_to_zt e =
   match e with
   | CoqInterpreter.OT -> Some zero
@@ -57,7 +81,7 @@ let rec printf_termT_atom m ppf e =
   | CoqInterpreter.FvarT x ->
       Format.fprintf ppf "%a" ident (Util.char_list_to_string x)
   | CoqInterpreter.PairT _ as e ->
-      Format.fprintf ppf "( @[<hov>%a@])" (printf_termT_PairT m) e
+      Format.fprintf ppf "( @[<hv>%a@])" (printf_termT_PairT m) e
   | CoqInterpreter.FalseT -> Format.fprintf ppf "false"
   | CoqInterpreter.TrueT -> Format.fprintf ppf "true"
   | _ -> (
@@ -68,9 +92,9 @@ let rec printf_termT_atom m ppf e =
 and printf_termT_expr m ppf e =
   match e with
   | CoqInterpreter.AbsT _ ->
-      Format.fprintf ppf "fun @[<hov -2>%a@]" (printf_termT_absT m) e
+      Format.fprintf ppf "fun @[<hv -2>%a@]" (printf_termT_absT m) e
   | CoqInterpreter.IteT (e, f, g) ->
-      Format.fprintf ppf "@[<hov> if %a@ then %a@ else %a@]"
+      Format.fprintf ppf "@[<hv> if %a@ then %a@ else %a@]"
         (printf_termT_expr m) e (printf_termT_expr m) f (printf_termT_expr m) g
   | _ -> Format.fprintf ppf "@[<2>%a@]" (printf_termT_appT m) e
 

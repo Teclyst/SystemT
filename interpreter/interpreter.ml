@@ -12,6 +12,7 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
           | Ok t ->
               let e = CoqInterpreter.par_fsubst fenv e in
               let e = CoqInterpreter.reduce e in
+              let t = Pretty.rename_type t in
               Format.fprintf Format.std_formatter
                 "@[<hov>\x1B[3;34m_ :@,\
                  \x1B[0;32m %a\x1B[3;34m =\x1B[0m@ %a @]\n"
@@ -27,6 +28,7 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
           | Ok t ->
               let e = CoqInterpreter.par_fsubst fenv e in
               let e = CoqInterpreter.reduce e in
+              let t = Pretty.rename_type t in
               Format.fprintf Format.std_formatter
                 "@[<hov>\x1B[3;34mval\x1B[0m %a\x1B[3;34m :@,\
                  \x1B[0;32m %a\x1B[3;34m =\x1B[0m@ %a @]\n"

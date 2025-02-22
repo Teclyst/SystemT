@@ -122,24 +122,14 @@ Notation "r >>= s" := (ext_equal r s) (at level 50) :
 Definition tsubst_order_with_tsubst (q r s : TMap.t typeT) : Prop :=
   s >>= r >>> q.
 
-Notation "r >><( q ) s" :=
-  (tsubst_order_with_tsubst q r s) (at level 50) : system_t_type_scope.
-
 Definition tsubst_order (r s : TMap.t typeT) : Prop :=
-  exists q : TMap.t typeT, r >><(q) s.
+  exists q : TMap.t typeT, s >>= r >>> q.
 
 Notation "r >>< s" := (tsubst_order r s) (at level 50) :
     system_t_type_scope.
 
-Definition typeT_order_with_tsubst (s : TMap.t typeT) (t u : typeT) :
-    Prop :=
-  u = t >> s.
-
-Notation "t >><t( s ) u" :=
-  (typeT_order_with_tsubst s t u) (at level 50) : system_t_type_scope.
-
 Definition typeT_order (t u : typeT) : Prop :=
-  exists s : TMap.t typeT, t >><t(s) u.
+  exists s : TMap.t typeT, u = t >> s.
 
 Notation "t >><t u" :=
   (typeT_order t u) (at level 50) : system_t_type_scope.

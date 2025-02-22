@@ -373,6 +373,27 @@ Proof.
   eauto.
 Qed.
 
+Lemma solves_par_tsubst_order
+  {r s : TMap.t typeT} {p : unification_problem} :
+    r >>< s -> solves r p -> solves s p.
+Proof.
+  move=> [q Heq1] Hsol1.
+  induction p as [ | [u v] p];
+  try left;
+  try right;
+  inversion Hsol1 as [ | a p' Huni1 Hsol2];
+  simpl.
+  - unfold unifies in Huni1.
+    simpl in Huni1.
+    rewrite Heq1.
+    unfold unifies.
+    repeat rewrite <- par_tsubst_par_tsubst.
+    f_equal.
+    assumption.
+  - apply IHp.
+    assumption.  
+Qed.
+
 Lemma solves_tsubst_add_r
   {s : TMap.t typeT} {p : unification_problem}
   {x : TIdent.t} {t : typeT} :

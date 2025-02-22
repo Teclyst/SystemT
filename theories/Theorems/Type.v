@@ -211,14 +211,11 @@ Proof.
   constructor.
   - move=> t.
     exists (@TMap.empty _).
-    unfold typeT_order_with_tsubst.
     symmetry.
     apply par_tsubst_empty.
     exact (@TMap.empty_1 _).
   - move=> t u v [r Hler] [s Hles].
-    unfold typeT_order_with_tsubst in Hler, Hles.
     exists (r >>> s).
-    unfold typeT_order_with_tsubst.
     rewrite <- par_tsubst_par_tsubst.
     rewrite <- Hler.
     assumption.
