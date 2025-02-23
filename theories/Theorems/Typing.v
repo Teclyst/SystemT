@@ -14,6 +14,9 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
 
+(** Proof of specification of type-checking.
+*)
+
 Lemma derivation_context_order_with_tsubst
   {G H : Context.t} {e : termT} {t : typeT} {s : TMap.t typeT} :
     G >><c(s) H -> G |- e :T t -> H |- e :T t >> s.
@@ -459,16 +462,6 @@ Proof.
     auto using TMap.find_2.
 Qed.
 
-Lemma TMap_left_union_par_tsubst_eq {r s : TMap.t typeT} {t u : typeT} :
-    u = t >> r -> u = t >> s -> u = t >> TMap_left_union r s.
-Proof.
-  move: u.
-  induction t;
-  simpl;
-  move=> u Heq1 Heq2;
-  auto.
-  -  
-
 Lemma TMap_inclusion_par_tsubst_1 {r s : TMap.t typeT} {t : typeT} :
     r <=m s ->
     (forall x : TIdent.t, TSet.In x (variable_set t) ->
@@ -661,8 +654,6 @@ Proof.
     rewrite <- H1;
     eauto using in_cons, in_or_app.
 Qed.
-
-Axiom TODO : False.
 
 Lemma par_tsubst_add {s : TMap.t typeT} {x : TIdent.t} {t u : typeT} :
     ~TSet.In x (variable_set t) ->
@@ -919,471 +910,7 @@ Lemma build_unification_problem_complete_2
         solves r p /\
         t = tvarT (TIdent.new used_tvars) >> r.
 Proof.
-  move=> Heq1 Heq2 Hderiv.
-  move: p s used_tvars new_used_tvars G Heq1 Heq2.
-  induction Hderiv;
-  move=> p r used_tvars new_used_tvars I Heq1 Heq2 Hinc;
-  simpl in Heq1;
-  have Hnewnin :
-    ~ TSet.In (TIdent.new used_tvars) (context_tvarT_set I) :=
-    fun Hin2 => TIdent.new_spec (Hinc _ Hin2).
-  - destruct TODO.
-    (* try destruct (nth_error (bmap I) n) eqn:Heq3; *)
-    (* simpl in Heq1; *)
-    (* try inversion Heq1 as [Heq4]. *)
-    (* exists (TMap.add (TIdent.new used_tvars) t r). *)
-    (* constructor. *)
-    (* rewrite context_par_tsubst_add. *)
-  (* --- move=> Hin. *)
-      (* apply (TIdent.new_spec (l := used_tvars)). *)
-      (* auto. *)
-  (* --- constructor; *)
-      (* auto. *)
-      (* move=> x Hin1 Hin2. *)
-      (* simpl in Hin1. *)
-      (* have Hin3 : *)
-        (* x = TIdent.new used_tvars \/ TSet.In x (variable_set t0). *)
-      (* TSetFacts.fsetdec. *)
-      (* destruct Hin3. *)
-  (* ----- rewrite H1 in Hin2. *)
-        (* destruct (TIdent.new_spec Hin2). *)
-  (* ----- apply (tvarT_set_context_tvarT_set (t := t0) (n := n)); *)
-        (* auto. *)
-  (* --- constructor. *)
-  (* ----- right; *)
-        (* try left; *)
-        (* simpl. *)
-        (* unfold unifies. *)
-        (* rewrite (par_tsubst_add (t := t0)). *)
-  (* ------- move=> Hin. *)
-          (* apply (TIdent.new_spec (l := used_tvars)). *)
-          (* apply Hinc. *)
-          (* apply (tvarT_set_context_tvarT_set (t := t0) (n := n)); *)
-          (* auto. *)
-  (* ------- rewrite Heq2 in H. *)
-          (* unfold bMapsTo in H. *)
-          (* simpl in H. *)
-          (* rewrite nth_error_map in H. *)
-          (* rewrite Heq3 in H. *)
-          (* simpl in H. *)
-          (* inversion H. *)
-          (* simpl. *)
-          (* rewrite TMapFacts.add_eq_o; *)
-          (* reflexivity. *)
-  (* ----- simpl. *)
-        (* rewrite TMapFacts.add_eq_o; *)
-        (* reflexivity. *)
-  - destruct TODO.
-  - destruct TODO.
-    (* destruct ( *)
-      (* build_unification_problem *)
-        (* (TIdent.new (TIdent.new used_tvars :: used_tvars) :: *)
-        (* TIdent.new used_tvars :: used_tvars) *)
-      (* (bpush *)
-        (* (tvarT (TIdent.new (TIdent.new used_tvars :: used_tvars))) I) *)
-      (* e *)
-    (* ) as [[p_body used_tvars_body] | ] eqn:Heq3; *)
-    (* inversion Heq1. *)
-    (* destruct ( *)
-      (* IHHderiv _ *)
-        (* (TMap.add *)
-          (* (TIdent.new (TIdent.new used_tvars :: used_tvars)) t r) *)
-        (* _ _ *)
-        (* (bpush *)
-          (* (tvarT *)
-            (* (TIdent.new (TIdent.new used_tvars :: used_tvars))) *)
-          (* I) *)
-        (* Heq3 *)
-    (* ) as [s [[Heq4 Hin1] [Hsol Heq5]]]. *)
-  (* --- rewrite context_par_tsubst_bpush. *)
-      (* f_equal. *)
-  (* ----- simpl. *)
-        (* rewrite TMapFacts.add_eq_o; *)
-        (* reflexivity. *)
-  (* ----- rewrite Heq2. *)
-        (* symmetry. *)
-        (* apply context_par_tsubst_add. *)
-        (* move=> Hin1. *)
-        (* apply ( *)
-          (* TIdent.new_spec (l := TIdent.new used_tvars :: used_tvars) *)
-        (* ). *)
-        (* right. *)
-        (* apply Hinc. *)
-        (* assumption. *)
-  (* --- move=> x Hin1. *)
-      (* unfold bpush in Hin1. *)
-      (* unfold context_tvarT_set in Hin1. *)
-      (* simpl in Hin1. *)
-      (* replace ( *)
-        (* fold_right *)
-          (* (fun t : typeT => [eta TSet.union (variable_set t)]) *)
-          (* TSet.empty *)
-          (* (Context.bmap I) *)
-      (* ) with (context_tvarT_set I) in Hin1; *)
-      (* try reflexivity. *)
-      (* have Hin2 : *)
-        (* x = TIdent.new (TIdent.new used_tvars :: used_tvars) \/ *)
-        (* TSet.In x (context_tvarT_set I). *)
-      (* TSetFacts.fsetdec. *)
-      (* destruct Hin2 as [Heq4 | Hin2]. *)
-  (* ----- left. *)
-        (* auto. *)
-  (* ----- right; *)
-        (* right. *)
-        (* auto. *)
-  (* --- exists (TMap.add (TIdent.new used_tvars) (t ->T u) s). *)
-      (* constructor. *)
-  (* ----- constructor. *)
-  (* ------- unfold bpush in Heq4. *)
-          (* inversion Heq4. *)
-          (* have Heq6 : G = I >>c s. *)
-          (* unfold ">>c". *)
-          (* rewrite <- H3. *)
-          (* rewrite <- H4. *)
-          (* destruct G; *)
-          (* reflexivity. *)
-          (* rewrite Heq6. *)
-          (* symmetry. *)
-          (* apply context_par_tsubst_add. *)
-          (* assumption. *)
-  (* ------- move=> x Hin2 Hin3. *)
-          (* simpl in Hin2. *)
-          (* have Hin4 : *)
-            (* x = (TIdent.new used_tvars) \/ *)
-            (* x = TIdent.new (TIdent.new used_tvars :: used_tvars) \/ *)
-            (* x = *)
-            (* TIdent.new *)
-              (* (TIdent.new (TIdent.new used_tvars :: used_tvars) :: *)
-              (* TIdent.new used_tvars :: used_tvars) \/ *)
-            (* TSet.In x (problem_variable_set p_body). *)
-          (* TSetFacts.fsetdec. *)
-          (* destruct Hin4 as [Heq6 | [Heq6 | [Heq6 | Hin4]]]; *)
-          (* try rewrite Heq6 in Hin3. *)
-  (* --------- destruct (TIdent.new_spec Hin3). *)
-  (* --------- destruct ( *)
-              (* TIdent.new_spec *)
-                (* (l := TIdent.new used_tvars :: used_tvars) *)
-            (* ). *)
-            (* right. *)
-            (* assumption. *)
-  (* --------- destruct ( *)
-              (* TIdent.new_spec *)
-                (* (l :=  *)
-                  (* TIdent.new *)
-                    (* (TIdent.new used_tvars :: used_tvars) :: *)
-                  (* TIdent.new used_tvars :: used_tvars) *)
-            (* ). *)
-            (* right. *)
-            (* right. *)
-            (* assumption. *)
-  (* --------- have Hin5 : *)
-              (* TSet.In *)
-                (* x *)
-                (* (context_tvarT_set *)
-                  (* (bpush *)
-                    (* (tvarT *)
-                      (* (TIdent.new *)
-                        (* (TIdent.new used_tvars :: used_tvars))) *)
-                    (* I)). *)
-            (* apply Hin1; *)
-            (* auto. *)
-            (* right; *)
-            (* right; *)
-            (* assumption. *)
-            (* unfold bpush in Hin5. *)
-            (* unfold context_tvarT_set in Hin5. *)
-            (* simpl in Hin5. *)
-            (* replace ( *)
-              (* fold_right *)
-                (* (fun t : typeT => [eta TSet.union (variable_set t)]) *)
-                (* TSet.empty *)
-                (* (Context.bmap I) *)
-            (* ) with (context_tvarT_set I) in Hin5; *)
-            (* try reflexivity. *)
-            (* have Hin6 : *)
-              (* x = TIdent.new (TIdent.new used_tvars :: used_tvars) \/ *)
-              (* TSet.In x (context_tvarT_set I). *)
-            (* TSetFacts.fsetdec. *)
-            (* destruct Hin6 as [Heq6 | Hin6]. *)
-  (* ----------- rewrite Heq6 in Hin3. *)
-              (* destruct ( *)
-              (* TIdent.new_spec *)
-                (* (l := TIdent.new used_tvars :: used_tvars) *)
-              (* ). *)
-              (* right. *)
-              (* assumption. *)
-  (* ----------- assumption. *)
-  (* ----- constructor. *)
-  (* ------- right. *)
-  (* --------- unfold unifies. *)
-            (* simpl. *)
-            (* rewrite TMapFacts.add_eq_o. *)
-            (* reflexivity. *)
-            (* rewrite TMapFacts.add_neq_o. *)
-            (* move=> Heq6. *)
-            (* apply ( *)
-              (* TIdent.new_spec *)
-                (* (l := TIdent.new used_tvars :: used_tvars) *)
-            (* ). *)
-            (* rewrite <- Heq6. *)
-            (* left. *)
-            (* reflexivity. *)
-            (* rewrite TMapFacts.add_neq_o. *)
-            (* move=> Heq6. *)
-            (* apply ( *)
-              (* TIdent.new_spec *)
-                (* (l := *)
-                  (* (TIdent.new *)
-                    (* (TIdent.new used_tvars :: used_tvars) :: *)
-                    (* TIdent.new used_tvars :: used_tvars)) *)
-            (* ). *)
-            (* rewrite <- Heq6. *)
-            (* right. *)
-            (* left. *)
-            (* reflexivity. *)
-            (* rewrite Heq5. *)
-            (* f_equal. *)
-            (* unfold bpush in Heq4. *)
-            (* unfold ">>c" in Heq4. *)
-            (* simpl in Heq4. *)
-            (* inversion Heq4. *)
-            (* reflexivity. *)
-  (* --------- apply unification_problem_solves_add; *)
-            (* auto. *)
-            (* move=> Hin2. *)
-            (* apply Hnewnin. *)
-            (* have Hin5 : *)
-              (* TSet.In *)
-                (* (TIdent.new used_tvars) *)
-                (* (context_tvarT_set *)
-                  (* (bpush *)
-                    (* (tvarT *)
-                      (* (TIdent.new *)
-                        (* (TIdent.new used_tvars :: used_tvars))) *)
-                    (* I)). *)
-            (* apply Hin1; *)
-            (* auto. *)
-            (* right; *)
-            (* left. *)
-            (* reflexivity. *)
-            (* unfold bpush in Hin5. *)
-            (* unfold context_tvarT_set in Hin5. *)
-            (* simpl in Hin5. *)
-            (* replace ( *)
-              (* fold_right *)
-                (* (fun t : typeT => [eta TSet.union (variable_set t)]) *)
-                (* TSet.empty *)
-                (* (Context.bmap I) *)
-            (* ) with (context_tvarT_set I) in Hin5; *)
-            (* try reflexivity. *)
-            (* have Hin6 : *)
-              (* TIdent.new used_tvars = TIdent.new (TIdent.new used_tvars :: used_tvars) \/ *)
-              (* TSet.In (TIdent.new used_tvars) (context_tvarT_set I). *)
-            (* TSetFacts.fsetdec. *)
-            (* destruct Hin6 as [Heq6 | Hin6]. *)
-  (* ----------- destruct ( *)
-              (* TIdent.new_spec *)
-                (* (l := TIdent.new used_tvars :: used_tvars) *)
-              (* ). *)
-              (* rewrite <- Heq6. *)
-              (* left. *)
-              (* reflexivity. *)
-  (* ----------- assumption. *)
-  (* ------- simpl. *)
-          (* rewrite TMapFacts.add_eq_o; *)
-          (* reflexivity. *)
-  - destruct (
-      build_unification_problem
-        (TIdent.new used_tvars :: used_tvars) I e
-    ) as [[p_fun used_tvars_fun] | ] eqn:Heq3;
-    simpl in Heq1;
-    try discriminate Heq1.
-    destruct (
-      build_unification_problem
-        used_tvars_fun I f
-    ) as [[p_arg used_tvars_arg] | ] eqn:Heq4;
-    simpl in Heq1;
-    inversion Heq1.
-    destruct (
-      IHHderiv1 _ r _ _ _ Heq3 Heq2
-    ) as [s_fun [[[Heq5 Hin1] Hin2] [Hin3 [Hsol1 Heq6]]]].
-    try right.
-    auto.
-    destruct (
-      IHHderiv2 _ r _ _ _ Heq4 Heq2
-    ) as [s_arg [[[Heq7 Hin4] Hin5] [Hin6 [Hsol2 Heq8]]]].
-    move=> x Hin7.
-    apply (
-      build_unification_problem_used_tvars_inc
-        (e := e)
-        (p := p_fun)
-        (G := I)
-        (used_tvars := TIdent.new used_tvars :: used_tvars)
-    );
-    try right;
-    auto.
-    exists (TMap_left_union s_arg s_fun).
-    constructor.
-  --- constructor.
-  ----- constructor.
-  -------     
-  - destruct TODO.
-  - destruct TODO.
-  - destruct TODO.
-  - exists (TMap.add (TIdent.new used_tvars) boolT r).
-    inversion Heq1.
-    constructor.
-  --- constructor.
-  ----- rewrite Heq2.
-        symmetry.
-        apply context_par_tsubst_add.
-        move=> Hin.
-        auto using (TIdent.new_spec (l := used_tvars)).
-  ----- move=> x Hin1 Hin2.
-        simpl in Hin1.
-        have Heq3 : x = TIdent.new used_tvars.
-        TSetFacts.fsetdec.
-        rewrite Heq3 in Hin2.
-        destruct (TIdent.new_spec Hin2).
-  --- constructor.
-  ----- inversion Heq1.
-        right;
-        try left;
-        simpl.
-        unfold unifies;
-        simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity.
-  ----- simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity.
-  - exists (TMap.add (TIdent.new used_tvars) boolT r).
-    inversion Heq1.
-    constructor.
-  --- constructor.
-  ----- rewrite Heq2.
-        symmetry.
-        apply context_par_tsubst_add.
-        move=> Hin.
-        auto using (TIdent.new_spec (l := used_tvars)).
-  ----- move=> x Hin1 Hin2.
-        simpl in Hin1.
-        have Heq3 : x = TIdent.new used_tvars.
-        TSetFacts.fsetdec.
-        rewrite Heq3 in Hin2.
-        destruct (TIdent.new_spec Hin2).
-  --- constructor.
-  ----- inversion Heq1.
-        right;
-        try left;
-        simpl.
-        unfold unifies;
-        simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity.
-  ----- simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity.
-  - destruct TODO.
-  - exists (TMap.add (TIdent.new used_tvars) natT r).
-    inversion Heq1.
-    constructor.
-  --- constructor.
-  ----- rewrite Heq2.
-        symmetry.
-        apply context_par_tsubst_add.
-        move=> Hin.
-        auto using (TIdent.new_spec (l := used_tvars)).
-  ----- move=> x Hin1 Hin2.
-        simpl in Hin1.
-        have Heq3 : x = TIdent.new used_tvars.
-        TSetFacts.fsetdec.
-        rewrite Heq3 in Hin2.
-        destruct (TIdent.new_spec Hin2).
-  --- constructor.
-  ----- inversion Heq1.
-        right;
-        try left;
-        simpl.
-        unfold unifies;
-        simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity.
-  ----- simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity.
-  - destruct (
-        build_unification_problem
-          (TIdent.new used_tvars :: used_tvars) I e
-    ) as [[p_arg used_tvars_arg] | ] eqn:Heq3;
-    inversion Heq1.
-    destruct (
-      IHHderiv _ r _ _ _ Heq3 Heq2
-    ) as [s [[Heq4 Hin1] [Hsol Heq5]]].
-    auto using in_cons.
-    exists (TMap.add (TIdent.new used_tvars) natT s).
-    constructor.
-  --- constructor.
-  ----- rewrite Heq4.
-        symmetry.
-        apply context_par_tsubst_add.
-        move=> Hin.
-        auto using (TIdent.new_spec (l := used_tvars)).
-  ----- simpl.
-        move=> x Hin2 Hin3.
-        have Hin4 : x = TIdent.new used_tvars \/
-          x = TIdent.new (TIdent.new used_tvars :: used_tvars) \/
-          TSet.In x (problem_variable_set p_arg).
-        TSetFacts.fsetdec.
-        destruct Hin4 as [Heq6 | [Heq6 | Hin4]].
-  ------- rewrite Heq6 in Hin3.
-          destruct (TIdent.new_spec Hin3).
-  ------- destruct (TIdent.new_spec (l := TIdent.new used_tvars :: used_tvars)).
-          right.
-          rewrite Heq6 in Hin3.
-          assumption.
-  ------- apply Hin1;
-          try right;
-          auto.
-  --- constructor.
-  ----- right.
-  ------- unfold unifies.
-          simpl.
-          rewrite TMapFacts.add_eq_o;
-          reflexivity.
-  ------- right.
-  --------- unfold unifies.
-            simpl.
-            fold (
-              tvarT
-                (TIdent.new (TIdent.new used_tvars :: used_tvars)) >>
-              (TMap.add (TIdent.new used_tvars) natT s)
-            ).
-            rewrite par_tsubst_add;
-            auto.
-            simpl.
-            rewrite TSetFacts.singleton_iff.
-            move=> Heq6.
-            apply (TIdent.new_spec (l := TIdent.new used_tvars :: used_tvars)).
-            left.
-            auto.
-  --------- have Hnin1 :
-              ~ TSet.In
-                (TIdent.new used_tvars)
-                (problem_variable_set p_arg).
-  ----------- move=> Hin2.
-              destruct (TIdent.new_spec (l := used_tvars)).
-              apply Hinc.
-              apply Hin1;
-              try left;
-              auto.
-  ----------- apply unification_problem_solves_add;
-              assumption.
-  ----- simpl.
-        rewrite TMapFacts.add_eq_o;
-        reflexivity. 
-  - destruct TODO.
-Qed.
+Admitted.
 
 Theorem type_check_complete_1
   {tenv : FMap.t typeT} {e : termT} {t : typeT} :
@@ -1416,7 +943,7 @@ Proof.
       (H := {{nil, tenv}})
       (e := e)
       (t := t)
-  ) as [s [[Hcomp _] [Hsol Heq2]]];
+  ) as [s [[[Heq1 Hin1] _] [Hin2 [Hsol Heq2]]]];
   auto;
   try reflexivity;
   unfold context_tvarT_set;
@@ -1462,7 +989,7 @@ Proof.
         (s := TMap.empty typeT)
         (e := e)
         (t := t)
-    ) as [s [Hcomp [Hsol Heq3]]];
+    ) as [s [[[Heq3 _] _] [_ [Hsol Heq4]]]];
     auto;
     try reflexivity;
     unfold context_tvarT_set;
@@ -1471,22 +998,20 @@ Proof.
       Unification.unify_complete_1
         (p := p)
         (s := s)
-    ) as [r Heq4].
+    ) as [r Heq5].
     auto.
-    rewrite Heq4 in Heq1.
+    rewrite Heq5 in Heq1.
     destruct (
       Unification.unify_complete_2
         (p := p)
         (r := r)
         (s := s)
-    ) as [q Heq5];
+    ) as [q Heq6];
     auto.
-    unfold "r >><( q ) s" in Heq5.
     exists q.
-    unfold "u >><t( q ) t".
     inversion Heq1.
     fold (tvarT (TIdent.new nil) >> r).
     rewrite par_tsubst_par_tsubst.
-    rewrite <- Heq5.
+    rewrite <- Heq6.
     assumption.
 Qed.

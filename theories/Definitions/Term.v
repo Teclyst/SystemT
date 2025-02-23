@@ -41,6 +41,10 @@ Module FIdentFacts := IdentFacts FIdent FSet FMap.
     that, a [termT] may correspond to something that is not a real
     System-T term, because some of its bound variables may be bound to
     nonexistant lambdas.
+
+    As the project evolved, there was a change in the intended semantics
+    of variables: free variables are now to be understood as already
+    declared constants, to be unfolded at interpretation time.
 *)
 Inductive termT :=
   | fvarT : FIdent.t -> termT
@@ -150,16 +154,29 @@ Proof.
     |
     destruct (lt_dec n m) |
     destruct (IHe (S m)) |
-    destruct (IHe1 m); destruct (IHe2 m) |
-    destruct (IHe1 m); destruct (IHe2 m) |
+    destruct (IHe1 m);
+    destruct (IHe2 m) |
+    destruct (IHe1 m);
+    destruct (IHe2 m) |
     destruct (IHe m) |
     destruct (IHe m) | | |
-    destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m) | | 
+    destruct (IHe1 m);
+    destruct (IHe2 m);
+    destruct (IHe3 m) | | 
     destruct (IHe m) |
-    destruct (IHe1 m); destruct (IHe2 m); destruct (IHe3 m)
+    destruct (IHe1 m);
+    destruct (IHe2 m);
+    destruct (IHe3 m)
   ];
-    try (left; auto using bound_nclosed; fail);
-    right; intro Hn; inversion Hn; auto using bound_nclosed.
+    try (
+      left;
+      auto using bound_nclosed;
+      fail
+    );
+    right;
+    intro Hn;
+    inversion Hn;
+    auto using bound_nclosed.
 Qed.
 
 (* * [bound_closed n] is a decidable predicate.
@@ -243,70 +260,9 @@ Fixpoint bsubst (n : nat) (e a : termT) :=
   | _ => e
   end.
 
-Fixpoint par_bsubst (n : nat) (s : list termT) (e : termT) :=
-  match e with
-  | bvarT m =>
-    match (m <? n), (List.nth_error s (m - n)) with
-    | true, _ => bvarT m
-    | _, Some a => a
-    | _, _ => bvarT (m - List.length s) 
-    end
-  | absT e => absT (par_bsubst (S n)
-    (List.map (bshift O) s) e)
-  | appT e f =>
-    appT (par_bsubst n s e) (par_bsubst n s f)
-  | pairT e f =>
-    pairT (par_bsubst n s e) (par_bsubst n s f)
-  | plT e => plT (par_bsubst n s e)
-  | prT e => prT (par_bsubst n s e)
-  | sT e => sT (par_bsubst n s e)
-  | iteT e f g =>
-    iteT
-      (par_bsubst n s e)
-      (par_bsubst n s f)
-      (par_bsubst n s g)
-    | recT e f g =>
-      recT
-        (par_bsubst n s e)
-        (par_bsubst n s f)
-        (par_bsubst n s g)
-    | _ => e
-  end.
-
 Notation "e [| n <- f |]" := (bsubst n e f) (at level 50) : system_t_term_scope.
 
-(** [fsubst x e a] is [e], where all the occurrences of the
-    variable bound by the lambda at height [n] above the root are
-    replaced by [a].
-*)
-Fixpoint fsubst (x : FIdent.t) (e a : termT) :=
-  match e with
-  | fvarT y =>
-    match FIdentFacts.eqb x y with
-    | true => a
-    | _ => fvarT y
-    end
-  | absT e => absT (fsubst x e (bshift O a))
-  | appT e f =>
-    appT (fsubst x e a) (fsubst x f a)
-  | pairT e f =>
-    pairT (fsubst x e a) (fsubst x f a)
-  | plT e => plT (fsubst x e a)
-  | prT e => prT (fsubst x e a)
-  | sT e => sT (fsubst x e a)
-  | iteT e f g =>
-    iteT
-      (fsubst x e a)
-      (fsubst x f a)
-      (fsubst x g a)
-  | recT e f g =>
-    recT
-      (fsubst x e a)
-      (fsubst x f a)
-      (fsubst x g a)
-  | _ => e
-  end.
-
+(** Parallel substitution of free variables, using a map. *)
 Fixpoint par_fsubst (s : FMap.t termT) (e : termT) :=
   match e with
   | fvarT x => 

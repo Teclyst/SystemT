@@ -16,6 +16,9 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_term_scope.
 Open Scope system_t_type_scope.
 
+(** A few examples of terms (most notably, addition, with its specification).
+*)
+
 Definition type_bool_as_boolT (b : bool) :
     |- bool_as_boolT b :T boolT :=
   match b with
@@ -54,20 +57,6 @@ Definition currify :=
     (appT
       (bvarT (S (S O)))
       (pairT (bvarT (S O)) (bvarT O))))).
-
-Definition fiboT :=
-  absT
-    (plT
-      (recT
-        (pairT oT (sT oT))
-        (absT
-          (absT
-            (pairT
-              (prT (bvarT (S O)))
-              (appT
-                (appT addT (plT (bvarT (S O))))
-                (prT (bvarT (S O)))))))
-        (bvarT O))).
 
 Lemma type_idT {t : typeT} :
     |- idT :T t ->T t.

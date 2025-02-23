@@ -1,3 +1,4 @@
+Require Import Nat.
 Require Import Definitions.Ident.
 Require Import Definitions.Term.
 Require Import Lia.
@@ -6,6 +7,9 @@ Require Import Morphisms.
 Require Import ssreflect ssrfun ssrbool.
 
 Open Scope system_t_term_scope.
+
+(** A bunch of technical lemmas on the different substitution operations.
+*)
 
 Lemma bound_closed_nat_as_natT {n : nat} :
     bound_closed (nat_as_natT n).
@@ -541,6 +545,50 @@ Proof.
     rewrite par_fsubst_bshift.
     exact (IHe _ _ _).
 Qed.
+
+(** Parallel bound variables substitution.
+
+    Replace an occurrence of [bvarT (n + k)] with
+    the [k]th element of [s].
+
+    This is not defined in [Definitions.Term.v] because it
+    does not really make sense: bound variables refer to lambdas
+    above, and substitution corresponds to beta-contraction. Thus
+    parallel substitution corresponds to a form of not-very-natural
+    parallel beta-contraction. We only need it for a few lemmas to prove
+    strong normalization; but it has to verify compatibility conditions
+    with normal substitution (the two next lemmas), which is why it is
+    defined in this slightly akward form.
+*)
+Fixpoint par_bsubst (n : nat) (s : list termT) (e : termT) :=
+  match e with
+  | bvarT m =>
+    match (m <? n), (List.nth_error s (m - n)) with
+    | true, _ => bvarT m
+    | _, Some a => a
+    | _, _ => bvarT (m - List.length s) 
+    end
+  | absT e => absT (par_bsubst (S n)
+    (List.map (bshift O) s) e)
+  | appT e f =>
+    appT (par_bsubst n s e) (par_bsubst n s f)
+  | pairT e f =>
+    pairT (par_bsubst n s e) (par_bsubst n s f)
+  | plT e => plT (par_bsubst n s e)
+  | prT e => prT (par_bsubst n s e)
+  | sT e => sT (par_bsubst n s e)
+  | iteT e f g =>
+    iteT
+      (par_bsubst n s e)
+      (par_bsubst n s f)
+      (par_bsubst n s g)
+    | recT e f g =>
+      recT
+        (par_bsubst n s e)
+        (par_bsubst n s f)
+        (par_bsubst n s g)
+    | _ => e
+  end.
 
 Lemma par_bsubst_empty {e : termT} {n : nat} :
     par_bsubst n nil e = e.

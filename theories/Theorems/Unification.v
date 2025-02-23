@@ -6,6 +6,10 @@ Require Import Morphisms.
 
 Require Import ssreflect ssrfun ssrbool.
 
+(** Definition and proof of specification of a [unify] functions
+    that implements the Robinson unification algorithm.
+*)
+
 #[export] Instance Proper_unifies : Morphisms.Proper (ext_equal ==> eq ==> eq ==> iff)
     unifies.
 Proof.

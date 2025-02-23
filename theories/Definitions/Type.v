@@ -27,6 +27,8 @@ Module TMapFacts := FSets.FMapFacts.Facts TMap.
 
 Module TIdentFacts := IdentFacts TIdent TSet TMap.
 
+(** System T types. *)
+
 Inductive typeT :=
   | natT : typeT
   | boolT : typeT
@@ -38,20 +40,8 @@ Notation "t ->T u" := (funT t u) (at level 35, right associativity) : system_t_t
 
 Notation "t *T u" := (prodT t u) (at level 34, left associativity) : system_t_type_scope.
 
-Fixpoint typeT_eqb (t u : typeT) :=
-  match t, u with
-  | tvarT x, tvarT y =>
-    TIdentFacts.eqb x y
-  | boolT, boolT
-  | natT, natT =>
-    true
-  | t ->T u, v ->T w
-  | t *T u, v *T w =>
-    typeT_eqb t v && typeT_eqb v w
-  | _, _  =>
-    false
-  end.
-
+(** Substitution of a type variable. 
+*)
 Fixpoint tsubst (x : TIdent.t) (a t : typeT) :=
   match t with
   | tvarT y =>
@@ -70,6 +60,8 @@ Fixpoint tsubst (x : TIdent.t) (a t : typeT) :=
 Notation "u (| x |-> t |)" := (tsubst x t u) (at level 45) :
     system_t_type_scope.
 
+(** Parallel substitution of a type variable. 
+*)
 Fixpoint par_tsubst (s : TMap.t typeT) (t : typeT) :=
   match t with
   | tvarT x =>
@@ -87,6 +79,8 @@ Fixpoint par_tsubst (s : TMap.t typeT) (t : typeT) :=
 
 Notation "x >> s" := (par_tsubst s x) (at level 45) : system_t_type_scope.
 
+(** Composition of two maps. Specification is in [Theorems.Type.v].
+*)
 Definition tsubst_compose (r s : TMap.t typeT) : TMap.t typeT :=
   TMap.map2
     (fun opt1 opt2 =>
@@ -100,6 +94,9 @@ Notation "r >>> s" :=
   (tsubst_compose r s) (at level 40, left associativity) :
     system_t_type_scope.
 
+(** Composition with a single variable substitution, both left and right
+versions.
+*)
 Definition tsubst_add_l (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
     TMap.t typeT :=
   match TMap.find x s with
@@ -113,12 +110,17 @@ Definition tsubst_add_r (x : TIdent.t) (t : typeT) (s : TMap.t typeT) :
 
 Notation "(| x |-> t |) >>> s" := (tsubst_add_r x t s) (at level 30) : system_t_type_scope.
 
+(** Extensionnal equality for maps, viewed as the function they induce
+    by parallel substitution.
+*)
 Definition ext_equal (r s : TMap.t typeT) : Prop :=
   forall t : typeT, t >> r = t >> s. 
 
 Notation "r >>= s" := (ext_equal r s) (at level 50) :
     system_t_type_scope.
 
+(** Substitution order.
+*)
 Definition tsubst_order_with_tsubst (q r s : TMap.t typeT) : Prop :=
   s >>= r >>> q.
 
@@ -134,6 +136,11 @@ Definition typeT_order (t u : typeT) : Prop :=
 Notation "t >><t u" :=
   (typeT_order t u) (at level 50) : system_t_type_scope.
 
+(** A unification problem is a list of pairs of types.
+    We are interested in finding maps [s] that solve it,
+    i.e. such that for every pair [(t, u)]
+    we have [t >> s = u >> s].
+*)
 Definition unification_problem : Type := list (typeT * typeT).
 
 Fixpoint variable_set (t : typeT) :=

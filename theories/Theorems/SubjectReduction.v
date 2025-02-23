@@ -14,6 +14,9 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
 
+(** Proof of subject reduction (and a few other lemmas on derivations).
+*)
+
 Fixpoint insert {A : Type} (n : nat) (x : A) (l : list A) :
     option (list A) :=
   match n, l with

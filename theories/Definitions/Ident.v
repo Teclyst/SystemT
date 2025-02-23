@@ -1,13 +1,23 @@
 Require Import FSets.FSets.
 Require Import FSets.FMaps.
 Require Import FSets.FMapAVL.
-Require Structures.OrderedType.
+Require Import Structures.OrderedType.
 Require Import PeanoNat.
 Require Import Nat.
 Require Import Ascii.
 Require Import String.
 
 Require Import ssreflect ssrfun ssrbool.
+
+(** Module specification for variable identifiers.
+
+    Basically, it is an ordered type with a way to create
+    fresh variables. It is presented that way to obscure away
+    implementation details, which are not very relevant.
+
+    We also provide implementations of the signature for [nat] and
+    [string].
+*)
 
 Module Type IDENTfun (E : UsualOrderedType).
 

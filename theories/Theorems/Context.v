@@ -8,6 +8,9 @@ Require Import List.
 
 Require Import ssreflect ssrfun ssrbool.
 
+(** A few facts on contexts.
+*)
+
 Lemma bMapsTo_fun {n : nat} {u v : typeT} {G : t} :
     bMapsTo n u G -> bMapsTo n v G -> u = v.
 Proof.

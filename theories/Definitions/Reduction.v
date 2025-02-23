@@ -8,6 +8,10 @@ Require Import Init.Wf.
 
 Open Scope system_t_term_scope.
 
+(** Reduction relation, in several versions that correspond to
+    different number of atomic reductions
+*)
+
 Inductive one_reduction : termT -> termT -> Prop :=
   | redex_beta :
     forall e f : termT,
@@ -103,6 +107,9 @@ Definition reduction_star (e f : termT) : Prop :=
 
 Notation "e ->* f" := (reduction_star e f) (at level 70) : system_t_term_scope.
 
+(** Term equivalence (reflexive-transitive-symmetric closure of reduction).
+*)
+
 Inductive equivalence : termT -> termT -> Prop :=
   | red_eq_red : forall e f : termT,
     e ->* f -> equivalence e f
@@ -121,6 +128,9 @@ Definition reducible (e : termT) : Prop :=
 Definition normal_form (e : termT) : Prop :=
     ~ reducible e.
 
+(** Checks if a term is reducible (specification is in
+    [Theorems.Reduction.v]).
+*)
 Fixpoint reducibleb (e : termT) : bool :=
   match e with
   | appT (absT _) _
@@ -141,6 +151,7 @@ Fixpoint reducibleb (e : termT) : bool :=
   | _ => false
   end.
 
+(** Leftmost reduction. *)
 Fixpoint left_reduce (e : termT) : option termT :=
   match e with
   | appT (absT e) f => Some (e [|O <- f|])
@@ -183,8 +194,12 @@ Fixpoint left_reduce (e : termT) : option termT :=
   | _ => None
   end.
 
+(** Reversed reduction relation (needed because [Acc] is about decreasing
+    sequences).
+*)
 Definition reduction_one (e f : termT) : Prop := f ->1 e.
 
-Notation "e 1<- f" := (reduction_one e f) (at level 70) : system_t_term_scope.
+Notation "e 1<- f" := (reduction_one e f) (at level 70) :
+    system_t_term_scope.
 
 Definition strongly_normalizing (e : termT) : Prop := Acc reduction_one e.

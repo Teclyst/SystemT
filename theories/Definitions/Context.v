@@ -4,6 +4,10 @@ Require Import Definitions.Term.
 Require Import FSets.FMaps.
 Require Import List.
 
+(** Typing context. In two parts: a list for bound variables
+    as they use de Bruijn indexes, and a map for free variables.    
+*)
+
 Record t := {
   bmap : list typeT;
   fmap : FMap.t typeT
@@ -49,6 +53,7 @@ Notation "G >><c( s ) H" :=
   (context_order_with_tsubst s G H) (at level 90) :
     system_t_type_scope.
 
+(** Substitution preorder for contexts. *)
 Definition context_order
   (G H : t) :
     Prop := exists s : TMap.t typeT, G >><c(s) H.

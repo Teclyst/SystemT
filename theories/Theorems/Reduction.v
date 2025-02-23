@@ -16,6 +16,14 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_type_scope.
 Open Scope system_t_term_scope.
 
+(** A few lemmas on reduction, including compatiblity with
+    substitutions.
+
+    We also define a [reduce] function that computes the normal
+    form of a strongly normalising term, and is defined by recursion
+    on the accessibility proof.
+*)
+
 Lemma one_reduction_reduction_1 {e f : termT} :
     (e ->1 f) <-> (e ->(1) f).
 Proof.
@@ -764,7 +772,7 @@ Proof.
 Qed.  
 
 Inductive option_eq {A : Type} (opt : option A) :=
-  | option_eq_Some : forall x, opt = Some x -> option_eq opt
+  | option_eq_Some : forall x : A, opt = Some x -> option_eq opt
   | option_eq_None : opt = None -> option_eq opt.
 
 Definition option_as_option_eq {A : Type} (opt : option A) :
@@ -773,10 +781,6 @@ Definition option_as_option_eq {A : Type} (opt : option A) :
   | Some x => option_eq_Some (Some x) x (eq_refl (Some x))
   | None => option_eq_None None (eq_refl None)
   end.
-
-(* match x as x0 return foo_type x0 -> bool with *)
-    (* | constructor A f => fun y => f y *)
-    (* end y. *)
 
 Fixpoint reduce (e : termT) (Hsn : strongly_normalizing e)
   {struct Hsn} :=
@@ -798,7 +802,7 @@ Proof.
   (* proof of strong normalization. *)
   (* This isn't an issue because [reduce] does not really *)
   (* depend on its second argument (that is only there to *)
-  (* ensure termination. *)
+  (* ensure termination.) *)
   induction Hsn2 as [e _ Hind].
   destruct Hsn as [Hacc].
   unfold reduce.

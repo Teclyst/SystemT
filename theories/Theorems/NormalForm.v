@@ -15,6 +15,9 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_term_scope.
 Open Scope system_t_type_scope.
 
+(** A few facts on normal forms.
+*)
+
 Lemma normal_form_reduction_star {e f : termT} :
     normal_form e -> (e ->* f) -> e = f.
 Proof.

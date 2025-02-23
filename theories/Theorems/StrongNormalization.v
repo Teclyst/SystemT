@@ -16,6 +16,9 @@ Require Import ssreflect ssrfun ssrbool.
 Open Scope system_t_term_scope.
 Open Scope system_t_type_scope.
 
+(** Proof that typability implies strong normalization.
+*)
+
 Lemma normal_form_strongly_normalizing {e : termT} :
     normal_form e -> strongly_normalizing e.
 Proof.
@@ -619,7 +622,8 @@ Proof.
     auto. 
 Qed.
 
-Lemma reducibility_candidate_derivation {G : Context.t} {t : typeT} {e : termT} :
+Lemma reducibility_candidate_derivation
+  {G : Context.t} {t : typeT} {e : termT} :
     G |- e :T t -> reducibility_candidate t e.
 Proof.
   rewrite <- (par_bsubst_empty (n := O)) at -1.

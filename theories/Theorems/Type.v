@@ -5,6 +5,9 @@ Require Import Morphisms.
 
 Require Import ssreflect ssrfun ssrbool.
 
+(** A few lemmas on types and type substitution.
+*)
+
 Lemma size_gt_O {t : typeT} : size t > O.
 Proof.
   induction t;

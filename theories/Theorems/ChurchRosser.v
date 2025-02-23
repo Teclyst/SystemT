@@ -8,6 +8,8 @@ Require Import ssreflect ssrfun ssrbool.
 
 Open Scope system_t_term_scope.
 
+(** Proof of the confluence, through parallel reductions. *)
+
 Inductive par_one_reduction : termT -> termT -> Prop :=
   | par_redrefl : forall e : termT, par_one_reduction e e
   | par_redex_beta : forall e f g h : termT,
