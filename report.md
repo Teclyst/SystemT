@@ -96,7 +96,7 @@ Filtrer sur `option_eq` permet d'obtenir une preuve d'égalité de `opt` à quel
 
 La certification de l'algorithme d'unification a eu lieu sans trop de problèmes ; en revanche, l'algorithme de construction de problème d'unification utilisé par le typeur a été beaucoup plus demandant (et d'ailleurs sa complétude n'est pas prouvée).
 
-L'idée de l'algorithme n'est pas très dure a comprendre : parcourir le terme en créant à chaque niveau de nouvelles contraintes d'unification avec de nouvelles variables (une par niveau). La complétude vient alors essentiellement du fait qu'on utilise toujours des variables fraîches ; mais cela demande de bien contrôler les variables utilisées et est technique. La complétude consiste à montrer que le problème obtenu est "aussi général que possible", dans le sens où de toute dérivation de typage on peut obtenir une substitution qui satisfasse le problème ; une manière efficace de faire cela aurait été d'avoir une fonction de type (dépendant)
+L'idée de l'algorithme n'est pas très dure a comprendre : parcourir le terme en créant à chaque niveau de nouvelles contraintes d'unification avec de nouvelles variables (une par niveau). La complétude vient alors essentiellement du fait qu'on utilise toujours des variables fraîches ; mais cela demande de bien contrôler les variables utilisées et est technique. La complétude consiste à montrer que le problème obtenu est "aussi général que possible", dans le sens où de toute dérivation de typage on peut obtenir une substitution qui satisfait le problème ; une manière efficace de faire cela aurait été d'avoir une fonction de type (dépendant)
 
 ```{coq}
 forall (G : Context.t) (t : typeT) (e : termT), G |- e :T t ->
@@ -106,6 +106,23 @@ TMap.t typeT
 (Certains arguments auxiliaires sont omis de cette signature). Malheureusement, cela échoue car `G |- e :T t` est une proposition, qui ne peut donc pas être éliminée en une valeur d'un type. J'ai essayé de changer le type de `derivation` en `Context.t -> termT -> typeT -> Type`, mais cela a cassé d'autres choses dans le code.
 
 Ainsi, je n'ai pas pu avoir une construction explicite de substitution ; à la place, j'ai dû me contenter de propositions existentielles directement dans l'énoncé de la preuve de complétude. Mais cela m'a forcé à donner un énoncé qui spécifie directement de nombreuses propriétés de contrôle sur les variables utilisées. Comme la preuve devenait trop compliquée par rapport au temps restant, j'ai fini par l'abandonner.
+
+## Contenu des fichiers et structure du projet
+
+Le code est séparé en trois parties (définitions, preuves et interpréteur). J'ai voulu séparer les définitions de la partie logique, pour que les définitions soient plus identifiables, mais l'inconvénient est qu'elles ont du coup été éloignées de leurs spécifications.
+
+- `theories/Definitions` : Séfinitions des principaux objets manipulés, en plusieurs fichiers.
+- `theories/Theorems/Substitution.v` : Lemmes techniques sur les subtitutions.
+- `theories/Theorems/NormalForm.v` : Résultats de base sur les formes normales.
+- `theories/Theorems/Reduction.v` : Lemmes techniques sur la relation de réduction, et définition d'une fonction de réduction sur les termes fortement normalisants.
+- `theories/Theorems/ChurchRosser.v` : Preuve de la confluence de la relation de réduction.
+- `theories/Theorems/Context.v` : Quelques lemmes de base sur les contextes de typage.
+- `theories/Theorems/Type.v` : Quelques lemmes de base sur les types et les substitutions de types.
+- `theories/Theorems/SubjectReduction.v` : Preuve de la propriété d'autoréduction.
+- `theories/Theorems/StrongNormalization.v` : Preuve de la normalisation forte des termes typables.
+- `theories/Theorems/Unification.v` : Certification de l'algorithme d'unification de Robinson.
+- `theories/Theorems/Typing.v` : Certification (incomplète) d'un algorithme de typage.
+- `interpreter` : Code de l'interpréteur, principalement en _OCaml_. Le fichier `Interpreter.v` ne fait que détailler comment extraire des objets définis ailleurs.
 
 ## Principales références utilisées
 
