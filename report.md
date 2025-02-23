@@ -8,7 +8,7 @@
 - Preuve de la normalisation forte.
 - Rajout des types produits.
 - Passage sous _dune_.
-- Début du travail sur l'extraction de code et la partie _OCaml_ (l'interpréteur).
+- Début du travail sur l'extraction de code et la partie OCaml (l'interpréteur).
 - Preuve de la correction et de la complétude de l'algorithme d'unification de Robinson.
 - Preuve de la correction de l'algorithme de typage, et preuve partielle de sa complétude.
 
@@ -50,13 +50,17 @@ L'interpréteur peut recevoir deux types d'entrées :
 - Terme à évaluer : entrée de la forme `e` où `e` est une expression. L'interpréteur essaie de la typer, et en cas de réussite la réduit, et affiche le type ainsi que la forme normale de `e`. Les variables libres présentent dans `e` sont toutes substituées par leur valeur dans l'environnement courant.
 - Déclaration : entrée de la forme `let x = e` où `x` est un identifiant et `e` une expression. L'interpréteur essaie de la typer, et en cas de réussite la réduit, affiche son type et sa forme normale, et les rajoute dans l'environnement. Les variables libres présentent dans `e` sont toutes substituées par leur valeur dans l'environnement courant.
 
-La terminaison de l'interpréteur est certifiable: en effet la correction des algorithmes est prouvée, ainsi que la normalisation forte pour le système T, et la compatibilité des substitutions parallèles de variables libres. En revanche, pour simplifier un peu le code, j'ai choisi d'écrire l'interpréteur en faisant appel à plusieurs sous-fonctions extraites de _Coq_, plutôt que d'écrire une seule fonction en _Coq_ représentant une étape d'exécution de l'interpréteur, et l'extraire.
+La terminaison de l'interpréteur est certifiable: en effet la correction des algorithmes est prouvée, ainsi que la normalisation forte pour le système T, et la compatibilité des substitutions parallèles de variables libres. En revanche, pour simplifier un peu le code, j'ai choisi d'écrire l'interpréteur en faisant appel à plusieurs sous-fonctions extraites de Coq, plutôt que d'écrire une seule fonction en Coq représentant une étape d'exécution de l'interpréteur, et l'extraire.
 
-Par ailleurs, l'interpréteur passe par un format intermédiaire (sans distinctions entre variables liées et libres, et sans indices de de Bruijn), qui est ensuite converti en le format extrait du code _Coq_. Cette conversion consiste essentiellement à repérer les variables liées et leur attribuer le bon indice. Aucune spécification n'est prouvée au sujet de cette étape.
+Par ailleurs, l'interpréteur passe par un format intermédiaire (sans distinctions entre variables liées et libres, et sans indices de de Bruijn), qui est ensuite converti en le format extrait du code Coq. Cette conversion consiste essentiellement à repérer les variables liées et leur attribuer le bon indice. Aucune spécification n'est prouvée au sujet de cette étape.
 
-Les types inférés sont aussi renommés (car le code _Coq_ produit beaucoup de noms de variables, qui fait que les indices augmentent très vite). Cette étape n'est pas non plus certifiée, car j'ai jugé que cela demanderait beaucoup d'effort pour pas grand chose ; cela dit, j'ai confiance en la correction du code.
+Les types inférés sont aussi renommés (car le code Coq produit beaucoup de noms de variables, qui fait que les indices augmentent très vite). Cette étape n'est pas non plus certifiée, car j'ai jugé que cela demanderait beaucoup d'effort pour pas grand chose ; cela dit, j'ai confiance en la correction du code.
 
-L'interpréteur utilise le formatteur d'Ocaml, mais le pretty printer n'est pour l'instant pas très bien réglé.
+L'interpréteur utilise le formatteur d'OCaml, mais le pretty printer n'est pour l'instant pas très bien réglé.
+
+La syntaxe des expressions (pour l'interpréteur) est essentiellement celle d'OCaml (la seule différence est qu'on note `fun _ => _` plutôt que `fun _ -> _`).
+
+Pour quitter le REPL, entrer `#quit`.
 
 ### Stratégies utilisées pour les preuves
 
@@ -122,7 +126,7 @@ Le code est séparé en trois parties (définitions, preuves et interpréteur). 
 - `theories/Theorems/StrongNormalization.v` : Preuve de la normalisation forte des termes typables.
 - `theories/Theorems/Unification.v` : Certification de l'algorithme d'unification de Robinson.
 - `theories/Theorems/Typing.v` : Certification (incomplète) d'un algorithme de typage.
-- `interpreter` : Code de l'interpréteur, principalement en _OCaml_. Le fichier `Interpreter.v` ne fait que détailler comment extraire des objets définis ailleurs.
+- `interpreter` : Code de l'interpréteur, principalement en OCaml. Le fichier `Interpreter.v` ne fait que détailler comment extraire des objets définis ailleurs.
 
 ## Principales références utilisées
 
@@ -131,4 +135,4 @@ Le code est séparé en trois parties (définitions, preuves et interpréteur). 
 - [3] Thierry Joly. Cours de théorie de la démonstration au LMFI.
 - [4] Morten Heine B. Sørensen et Paweł Urzyczyn. _Lectures on the Curry-Howard isomorphism_.
 - [5] Jean-Yves Girard, Paul Taylor et Yves Lafont. _Proofs and Types_.
-- [6] Rodrigo Ribeiro et Carlos Camarão. _A Mechanized Textbook Proof of a Type Unification Algorithm_. Dans Márcio Cornélio et Bill Roscoe. _Formal Methods: Foundations and Applications_. (Ne contient pas directement de code _Coq_).
+- [6] Rodrigo Ribeiro et Carlos Camarão. _A Mechanized Textbook Proof of a Type Unification Algorithm_. Dans Márcio Cornélio et Bill Roscoe. _Formal Methods: Foundations and Applications_. (Ne contient pas directement de code Coq).

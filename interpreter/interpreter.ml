@@ -64,7 +64,7 @@ let rec loop (fenv : CoqInterpreter.termT CoqInterpreter.FMap.t)
          (CoqInterpreter.Unification_error_tvarT_occurs (x, t)) ) ->
       Format.fprintf Format.std_formatter
         "@[<h>\x1B[1;31mType Error!\n\
-         \x1B[0;3;31mThe type variable \x1B[0;31mt%a \x1B[3;31moccurs inside \
+         \x1B[0;3;31mThe type variable \x1B[0;31m'%a \x1B[3;31moccurs inside \
          \x1B[0;31m%a\x1B[3;31m.\n\
          \x1B[0m@]"
         Pretty.ident
